@@ -29,15 +29,26 @@ export default function Leaderboard() {
             !data.name.toLowerCase().includes('hcmc.duyvo') &&
             data.id !== 'XN5n7KzWLuSXSwdCGkoyZUVDb2j1' &&
             !data.name.toLowerCase().includes('duy vo') &&
-            !data.name.toLowerCase().includes('duy võ')
+            !data.name.toLowerCase().includes('duy võ') &&
+            !data.name.toLowerCase().includes('thanh duy võ')
           ) {
             fetchedLeaders.push(data);
           }
         });
         
-        // ensure current user is in the list
+        // ensure current user is in the list, but don't add if they are one of the hidden users
         if (currentUser && !fetchedLeaders.some(l => l.id === currentUser.id)) {
-          fetchedLeaders.push(currentUser);
+          const cName = currentUser.name.toLowerCase();
+          if (
+             cName !== 'hcmc.duyvo@gmail.com' && 
+            !cName.includes('hcmc.duyvo') &&
+             currentUser.id !== 'XN5n7KzWLuSXSwdCGkoyZUVDb2j1' &&
+            !cName.includes('duy vo') &&
+            !cName.includes('duy võ') &&
+            !cName.includes('thanh duy võ')
+          ) {
+            fetchedLeaders.push(currentUser);
+          }
         }
         
         setBaseLeaders(fetchedLeaders);
