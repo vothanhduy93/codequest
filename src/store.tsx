@@ -8,6 +8,10 @@ import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 interface AppContextType {
   user: User | null;
   loading: boolean;
+  newEarnedBadges: Badge[];
+  clearNewEarnedBadge: (badgeId: string) => void;
+  levelUpData: number | null;
+  clearLevelUp: () => void;
   addXp: (xp: number) => void;
   completeChallenge: (challengeId: string, xpReward?: number) => void;
   claimQuest: (questId: string, xpReward: number) => void;
@@ -45,6 +49,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newEarnedBadges, setNewEarnedBadges] = useState<Badge[]>([]);
+  const [levelUpData, setLevelUpData] = useState<number | null>(null);
+
+  const clearNewEarnedBadge = (badgeId: string) => {
+    setNewEarnedBadges(prev => prev.filter(b => b.id !== badgeId));
+  };
+
+  const clearLevelUp = () => setLevelUpData(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
@@ -55,17 +67,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as User;
             
-            // Temporary auto-reset for Duy Vo 
-            if (data.id === 'XN5n7KzWLuSXSwdCGkoyZUVDb2j1' || data.name.includes('hcmc.duyvo')) {
-              if (data.xp !== 0) {
-                const resetData = defaultUser(data.id, data.name, data.photoURL);
-                await setDoc(userRef, resetData);
-                setUser(resetData);
-                setLoading(false);
-                return;
-              }
-            }
-
             const today = new Date().toISOString().split('T')[0];
             let needsUpdate = false;
             let updatedData = { ...data };
@@ -155,6 +156,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    if (newLevel > user.level) {
+      setLevelUpData(newLevel);
+    }
+
     const today = new Date().toISOString().split('T')[0];
     const questProgress = user.questProgress && user.questProgress.date === today
       ? { ...user.questProgress, xpGained: user.questProgress.xpGained + amount }
@@ -169,27 +174,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const newCompleted = [...user.completedChallenges, challengeId];
     const newBadges = [...user.badges];
+    const newlyEarnedThisTurn: Badge[] = [];
 
     if (newCompleted.length === 1 && !newBadges.find(b => b.id === 'first_blood')) {
       newBadges.push(BADGES.first_blood);
+      newlyEarnedThisTurn.push(BADGES.first_blood);
     }
     
     const hasHtml1 = newCompleted.includes('c1_1');
     const hasHtml2 = newCompleted.includes('c1_2');
     if (hasHtml1 && hasHtml2 && !newBadges.find(b => b.id === 'html_master')) {
       newBadges.push(BADGES.html_master);
+      newlyEarnedThisTurn.push(BADGES.html_master);
     }
 
     const hasCss1 = newCompleted.includes('c2_1');
     const hasCss2 = newCompleted.includes('c2_2');
     if (hasCss1 && hasCss2 && !newBadges.find(b => b.id === 'css_master')) {
       newBadges.push(BADGES.css_master);
+      newlyEarnedThisTurn.push(BADGES.css_master);
     }
 
     const hasJs1 = newCompleted.includes('c3_1');
     const hasJs2 = newCompleted.includes('c3_2');
     if (hasJs1 && hasJs2 && !newBadges.find(b => b.id === 'js_ninja')) {
       newBadges.push(BADGES.js_ninja);
+      newlyEarnedThisTurn.push(BADGES.js_ninja);
+    }
+
+    if (newlyEarnedThisTurn.length > 0) {
+      setNewEarnedBadges(prev => [...prev, ...newlyEarnedThisTurn]);
     }
 
     let newXp = user.xp + (xpReward || 0);
@@ -202,6 +216,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           break;
         }
       }
+    }
+
+    if (newLevel > user.level) {
+      setLevelUpData(newLevel);
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -252,6 +270,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    if (newLevel > user.level) {
+      setLevelUpData(newLevel);
+    }
+
     saveUser({ ...user, xp: newXp, level: newLevel, questProgress });
   };
 
@@ -270,6 +292,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         newLevel = i + 1;
         break;
       }
+    }
+
+    if (newLevel > user.level) {
+      setLevelUpData(newLevel);
     }
 
     saveUser({ ...user, xp: newXp, level: newLevel });
@@ -306,7 +332,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AppContext.Provider value={{ user, loading, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, resetProgress, signOut }}>
+    <AppContext.Provider value={{ user, loading, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, resetProgress, signOut }}>
       {children}
     </AppContext.Provider>
   );

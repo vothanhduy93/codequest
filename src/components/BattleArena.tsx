@@ -9,6 +9,7 @@ import { Play, CheckCircle, XCircle, Swords, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { formatName } from '../lib/nameUtils';
+import confetti from 'canvas-confetti';
 
 export default function BattleArena({ matchData, onLeave }: { matchData: any, onLeave: () => void }) {
   const { user, resolvePvP } = useAppContext();
@@ -21,8 +22,10 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   const [pvpResult, setPvpResult] = useState<'win' | 'lose' | null>(null);
 
   const activeChallenge = CHALLENGES.find(c => c.id === matchData.challengeId);
-  const me = matchData.player1.uid === user?.id ? matchData.player1 : matchData.player2;
-  const opponent = matchData.player1.uid === user?.id ? matchData.player2 : matchData.player1;
+  const isPlayer1 = matchData.player1.uid === user?.id;
+  const me = isPlayer1 ? matchData.player1 : matchData.player2;
+  const opponent = isPlayer1 ? matchData.player2 : matchData.player1;
+  const opponentState = isPlayer1 ? matchData.player2State : matchData.player1State;
 
   // countdown
   const [countdown, setCountdown] = useState(5);
@@ -43,6 +46,23 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
     return () => clearInterval(timer);
   }, [matchData.startedAt]);
 
+  // Sync to firestore
+  useEffect(() => {
+    if (matchData.status !== 'playing' || !user) return;
+    
+    // Quick debounce for syncing state to opponent
+    const timer = setTimeout(() => {
+      const updatePayload = isPlayer1 ? {
+        player1State: { html: htmlCode, css: cssCode, js: jsCode, activeTab: activeEditorTab }
+      } : {
+        player2State: { html: htmlCode, css: cssCode, js: jsCode, activeTab: activeEditorTab }
+      };
+      updateDoc(doc(db, 'matches', matchData.id), updatePayload).catch(console.error);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [htmlCode, cssCode, jsCode, activeEditorTab, matchData.id, matchData.status, user, isPlayer1]);
+
   useEffect(() => {
     if (matchData.status === 'finished' && matchData.winner) {
       if (matchData.winner === user?.id) {
@@ -50,6 +70,32 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
            setPvpResult('win');
            resolvePvP(true);
            playSound('success');
+           
+           // Confetti effect
+           const duration = 3000;
+           const end = Date.now() + duration;
+
+           const frame = () => {
+             confetti({
+               particleCount: 5,
+               angle: 60,
+               spread: 55,
+               origin: { x: 0 },
+               colors: ['#facc15', '#3b82f6', '#ec4899', '#10b981']
+             });
+             confetti({
+               particleCount: 5,
+               angle: 120,
+               spread: 55,
+               origin: { x: 1 },
+               colors: ['#facc15', '#3b82f6', '#ec4899', '#10b981']
+             });
+
+             if (Date.now() < end) {
+               requestAnimationFrame(frame);
+             }
+           };
+           frame();
         }
       } else {
         if (!pvpResult) {
@@ -214,9 +260,40 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
       )}
 
       {/* Editor & Preview Workspace */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Editor */}
-        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-red-500/10">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Opponent Editor (Read-Only) */}
+        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-white/10 opacity-80 pointer-events-none">
+          <div className="p-4 bg-slate-800 border-b border-white/5 pb-0 flex gap-2">
+            {['html', 'css', 'js'].map(tab => (
+              <button
+                key={`opp-${tab}`}
+                className={cn(
+                  "px-4 py-2 font-mono text-sm font-medium border-b-2 transition-colors uppercase",
+                  opponentState?.activeTab === tab
+                    ? "border-red-400 text-red-400"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+            <div className="ml-auto text-xs text-red-400 italic flex items-center mb-2">Đang code...</div>
+          </div>
+          <div className="flex-1 relative">
+            <div className={cn("w-full h-full", opponentState?.activeTab !== 'html' && "hidden")}>
+              <Editor path="\opp_pvp.html" height="100%" language="html" theme="vs-dark" value={opponentState?.html || ''} options={{ minimap: { enabled: false }, fontSize: 12, readOnly: true }} />
+            </div>
+            <div className={cn("w-full h-full", opponentState?.activeTab !== 'css' && "hidden")}>
+               <Editor path="\opp_pvp.css" height="100%" language="css" theme="vs-dark" value={opponentState?.css || ''} options={{ minimap: { enabled: false }, fontSize: 12, readOnly: true }} />
+            </div>
+            <div className={cn("w-full h-full", opponentState?.activeTab !== 'js' && "hidden")}>
+               <Editor path="\opp_pvp.js" height="100%" language="javascript" theme="vs-dark" value={opponentState?.js || ''} options={{ minimap: { enabled: false }, fontSize: 12, readOnly: true }} />
+            </div>
+          </div>
+        </div>
+
+        {/* My Editor */}
+        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-teal-500/30 ring-1 ring-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.15)]">
           {!isStarted ? (
             <div className="absolute inset-0 z-40 bg-slate-900/90 flex flex-col items-center justify-center backdrop-blur-sm">
               <h2 className="text-2xl font-bold text-slate-50 mb-4">Chuẩn bị!</h2>
@@ -232,7 +309,7 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 className={cn(
                   "px-4 py-2 font-mono text-sm font-medium border-b-2 transition-colors uppercase",
                   activeEditorTab === tab
-                    ? "border-red-400 text-red-400"
+                    ? "border-teal-400 text-teal-400"
                     : "border-transparent text-slate-400 hover:text-slate-200"
                 )}
               >
@@ -254,7 +331,7 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
           </div>
           
           <div className="p-4 bg-slate-800 border-t border-white/5">
-             <button onClick={validateCode} className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition">
+             <button onClick={validateCode} className="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition">
                <Play size={18} /> Cập Nhật Kết Quả
              </button>
           </div>

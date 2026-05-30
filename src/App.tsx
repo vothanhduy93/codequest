@@ -6,6 +6,9 @@ import { cn } from './lib/utils';
 import { formatName } from './lib/nameUtils';
 import { motion, AnimatePresence } from 'motion/react';
 
+import BadgeToast from './components/BadgeToast';
+import LevelUpModal from './components/LevelUpModal';
+
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Arena = lazy(() => import('./components/Arena'));
 const LearnTab = lazy(() => import('./components/LearnTab'));
@@ -186,6 +189,8 @@ function AppContent() {
           </div>
         </main>
       </div>
+      <BadgeToast />
+      <LevelUpModal />
     </div>
   );
 }
