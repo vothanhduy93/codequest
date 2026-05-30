@@ -176,14 +176,23 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           challengeTitle: activeChallenge.title
         })
       });
-      const data = await res.json();
-      if (res.ok) {
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        setReviewResult(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 100)}...`);
+        setIsReviewLoading(false);
+        return;
+      }
+
+      if (res.ok && data.review) {
         setReviewResult(data.review);
       } else {
-        setReviewResult('Oops, có lỗi xảy ra hoặc gia sư đang bận!');
+        setReviewResult(data.error || 'Oops, có lỗi xảy ra hoặc gia sư đang bận!');
       }
-    } catch(e) {
-      setReviewResult('Lỗi kết nối khi gọi chuyên gia!');
+    } catch(e: any) {
+      setReviewResult(`Lỗi kết nối: ${e?.message}`);
     }
     setIsReviewLoading(false);
   };
@@ -281,14 +290,22 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                 challengeInstructions: activeChallenge.instructions
               })
             });
-            const data = await res.json();
+            const text = await res.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              setTutorMessage(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 50)}...`);
+              setIsTutorLoading(false);
+              return;
+            }
             if (data.explanation) {
               setTutorMessage(data.explanation);
             } else {
-              setTutorMessage('Oops, có lỗi xảy ra. Bạn thử kiểm tra lại code xem nhé!');
+              setTutorMessage(data.error || 'Oops, có lỗi xảy ra. Bạn thử kiểm tra lại code xem nhé!');
             }
-          } catch (e) {
-            setTutorMessage('Gia sư AI đang nghỉ tay chút xíu, nhưng lỗi sai ở đâu đó trong code đó!');
+          } catch (e: any) {
+            setTutorMessage(`Gia sư AI đang lỗi kết nối: ${e?.message}`);
           }
           setIsTutorLoading(false);
         }

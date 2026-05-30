@@ -24,8 +24,17 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: aiTopic, weakness: aiWeakness })
       });
-      const data = await response.json();
-      if (response.ok && data) {
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        alert(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 100)}...`);
+        setIsGenerating(false);
+        return;
+      }
+
+      if (response.ok && data && !data.error) {
          data.id = `ai_${Date.now()}`;
          data.kind = 'lesson';
          data.difficulty = 'Trung bình';
@@ -34,9 +43,9 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
       } else {
         alert(data.error || 'Có lỗi xảy ra');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Không thể kết nối đến máy chủ AI');
+      alert(`Không thể kết nối đến máy chủ AI: ${e?.message}`);
     } finally {
       setIsGenerating(false);
     }
