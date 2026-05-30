@@ -1,0 +1,8 @@
+{
+  "name": "CodeQuest VN",
+  "description": "Nền tảng học lập trình HTML, CSS, JS qua hệ thống gamification kết hợp thi đấu và cộng đồng.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

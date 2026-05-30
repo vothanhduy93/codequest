@@ -1,0 +1,25 @@
+{
+  "entities": {
+    "UserProgress": {
+      "title": "User Progress",
+      "description": "Stores user learning progress, experience points, level, and completed challenges.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "badges": { "type": "array" },
+        "completedChallenges": { "type": "array" }
+      },
+      "required": ["id", "name", "xp", "level", "badges", "completedChallenges"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "User progress documents indexed by Firebase Auth UID."
+    }
+  }
+}
