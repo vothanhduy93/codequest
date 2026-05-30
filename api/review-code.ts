@@ -39,6 +39,8 @@ Trả về phản hồi bằng Tiếng Việt thân thiện, rõ ràng, trình b
     res.status(200).json({ review: response.text });
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: `Hệ thống đánh giá lỗi: ${err?.message || err}` });
+    const msg = err?.message || String(err);
+    const isQuota = msg.includes('429') || msg.includes('Quota exceeded');
+    res.status(500).json({ error: isQuota ? 'Vượt quá giới hạn gọi AI (Quota exceeded). Vui lòng đợi một lát rồi thử lại nhé!' : `Hệ thống đánh giá lỗi: ${msg}` });
   }
 }

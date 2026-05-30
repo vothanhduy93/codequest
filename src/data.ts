@@ -266,7 +266,7 @@ export const CHALLENGES: Challenge[] = [
     solutionExplanation: '`border` vẽ khung. `border-radius` sẽ làm cong các cạnh góc làm chi tiết trông thanh thoát hơn.',
     defaultCode: '<div class="box"></div>\n<style>\n  .box {\n    width: 50px; height: 50px;\n    \n  }\n</style>',
     xpReward: 200,
-    validationSnippet: "const box = document.querySelector('.box'); return box && window.getComputedStyle(box).borderWidth === '2px' && window.getComputedStyle(box).borderRadius === '10px';",
+    validationSnippet: "const box = document.querySelector('.box'); return box && (window.getComputedStyle(box).borderTopWidth === '2px' || window.getComputedStyle(box).borderWidth.includes('2px')) && (window.getComputedStyle(box).borderRadius === '10px' || window.getComputedStyle(box).borderTopLeftRadius === '10px');",
   },
   {
     id: 'css_5',

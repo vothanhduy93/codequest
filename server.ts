@@ -44,7 +44,9 @@ Nhưng đoạn mã này đang bị lỗi hoặc làm sai nhiệm vụ. Hãy đó
       res.json({ explanation: response.text });
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ error: 'Gia sư đang bận nghỉ phép, hãy thử lại.' });
+      const msg = err?.message || String(err);
+      const isQuota = msg.includes('429') || msg.includes('Quota exceeded');
+      res.status(500).json({ error: isQuota ? 'Vượt quá giới hạn gọi AI (Quota exceeded). Vui lòng đợi một lát rồi thử lại nhé!' : `Gia sư đang bận nghỉ phép: ${msg}` });
     }
   });
 
@@ -100,7 +102,9 @@ Return JSON schema only, no markup in output (we will parse JSON).`;
       res.json(data);
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ error: 'Lỗi sinh đề bài từ AI.' });
+      const msg = err?.message || String(err);
+      const isQuota = msg.includes('429') || msg.includes('Quota exceeded');
+      res.status(500).json({ error: isQuota ? 'Vượt quá giới hạn gọi AI (Quota exceeded). Vui lòng đợi một lát rồi thử lại nhé!' : `Lỗi sinh đề bài từ AI: ${msg}` });
     }
   });
 
@@ -137,7 +141,9 @@ Trả về phản hồi bằng Tiếng Việt thân thiện, rõ ràng, trình b
       res.json({ review: response.text });
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ error: `Hệ thống đánh giá lỗi: ${err?.message || err}` });
+      const msg = err?.message || String(err);
+      const isQuota = msg.includes('429') || msg.includes('Quota exceeded');
+      res.status(500).json({ error: isQuota ? 'Vượt quá giới hạn gọi AI (Quota exceeded). Vui lòng đợi một lát rồi thử lại nhé!' : `Hệ thống đánh giá lỗi: ${msg}` });
     }
   });
 

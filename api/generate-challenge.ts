@@ -58,6 +58,8 @@ Return JSON schema only, no markup in output (we will parse JSON).`;
     res.status(200).json(data);
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: `Lỗi sinh đề bài từ AI: ${err?.message || err}` });
+    const msg = err?.message || String(err);
+    const isQuota = msg.includes('429') || msg.includes('Quota exceeded');
+    res.status(500).json({ error: isQuota ? 'Vượt quá giới hạn gọi AI (Quota exceeded). Vui lòng đợi một lát rồi thử lại nhé!' : `Lỗi sinh đề bài từ AI: ${msg}` });
   }
 }
