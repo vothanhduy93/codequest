@@ -18,6 +18,7 @@ interface AppContextType {
   resolvePvP: (won: boolean) => void;
   saveSnippet: (title: string, code: string, language: 'html' | 'css' | 'javascript') => void;
   deleteSnippet: (id: string) => void;
+  buyStreakFreeze: () => void;
   resetProgress: () => void;
   signOut: () => void;
 }
@@ -33,6 +34,8 @@ const defaultUser = (uid: string, name: string, photoURL: string | null): User =
     badges: [],
     completedChallenges: [],
     streak: 0,
+    streakFreezes: 0,
+    coins: 0,
     lastActiveDate: '',
     lastLoginDate: today,
     questProgress: {
@@ -71,29 +74,54 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             let needsUpdate = false;
             let updatedData = { ...data };
 
-            // Streak check - if more than 1 day missed, break streak
-            const lastActive = data.lastActiveDate || '';
-            let newStreak = data.streak || 0;
+            // Initialize new fields
+            if (updatedData.coins === undefined) {
+              updatedData.coins = 0;
+              needsUpdate = true;
+            }
+            if (updatedData.streakFreezes === undefined) {
+              updatedData.streakFreezes = 0;
+              needsUpdate = true;
+            }
+
+            // Streak check - if more than 1 day missed, break streak or consume freeze
+            const lastActive = updatedData.lastActiveDate || '';
+            let newStreak = updatedData.streak || 0;
+            let newFreezes = updatedData.streakFreezes || 0;
             
             if (lastActive && lastActive !== today) {
               const lastDate = new Date(lastActive);
               const currentDate = new Date(today);
+              // calculate diff in days precisely by comparing midnight times
+              lastDate.setHours(0,0,0,0);
+              currentDate.setHours(0,0,0,0);
               const diffTime = Math.abs(currentDate.getTime() - lastDate.getTime());
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
               
               if (diffDays > 1) {
-                newStreak = 0;
-                needsUpdate = true;
-                updatedData.streak = 0;
+                const missedDays = diffDays - 1;
+                if (newFreezes >= missedDays) {
+                  newFreezes -= missedDays;
+                  updatedData.streakFreezes = newFreezes;
+                  // Set lastActiveDate to yesterday so they still have to complete a task today to keep it
+                  const yesterday = new Date(currentDate.getTime() - 86400000).toISOString().split('T')[0];
+                  updatedData.lastActiveDate = yesterday;
+                  needsUpdate = true;
+                } else {
+                  newStreak = 0;
+                  updatedData.streak = 0;
+                  updatedData.streakFreezes = 0;
+                  needsUpdate = true;
+                }
               }
             }
 
-            if (data.lastLoginDate !== today) {
+            if (updatedData.lastLoginDate !== today) {
               updatedData.lastLoginDate = today;
               needsUpdate = true;
             }
 
-            if (!data.questProgress || data.questProgress.date !== today) {
+            if (!updatedData.questProgress || updatedData.questProgress.date !== today) {
               updatedData.questProgress = {
                 challengesCompleted: 0,
                 xpGained: 0,
@@ -104,7 +132,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
 
             // Update photoURL if it doesn't exist but authUser has one
-            if (!data.photoURL && authUser.photoURL) {
+            if (!updatedData.photoURL && authUser.photoURL) {
               updatedData.photoURL = authUser.photoURL;
               needsUpdate = true;
             }
@@ -202,10 +230,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       newlyEarnedThisTurn.push(BADGES.js_ninja);
     }
 
-    if (newlyEarnedThisTurn.length > 0) {
-      setNewEarnedBadges(prev => [...prev, ...newlyEarnedThisTurn]);
-    }
-
     let newXp = user.xp + (xpReward || 0);
     let newLevel = user.level;
     
@@ -237,11 +261,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (newLastActiveDate !== today) {
       newStreak += 1;
       newLastActiveDate = today;
+
+      // Check streak milestones
+      if (newStreak === 7 && !newBadges.find(b => b.id === 'streak_7')) {
+        newBadges.push(BADGES.streak_7);
+        newlyEarnedThisTurn.push(BADGES.streak_7);
+      } else if (newStreak === 30 && !newBadges.find(b => b.id === 'streak_30')) {
+        newBadges.push(BADGES.streak_30);
+        newlyEarnedThisTurn.push(BADGES.streak_30);
+      } else if (newStreak === 100 && !newBadges.find(b => b.id === 'streak_100')) {
+        newBadges.push(BADGES.streak_100);
+        newlyEarnedThisTurn.push(BADGES.streak_100);
+      }
     }
+
+    if (newlyEarnedThisTurn.length > 0) {
+      setNewEarnedBadges(prev => [...prev, ...newlyEarnedThisTurn]);
+    }
+
+    const newCoins = (user.coins || 0) + Math.floor((xpReward || 0) / 2); // 1 coin per 2 XP
 
     saveUser({
       ...user,
       xp: newXp,
+      coins: newCoins,
       level: newLevel,
       completedChallenges: newCompleted,
       badges: newBadges,
@@ -249,6 +292,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       streak: newStreak,
       lastActiveDate: newLastActiveDate
     });
+  };
+
+  const buyStreakFreeze = () => {
+    if (!user) return;
+    const currentCoins = user.coins || 0;
+    const currentFreezes = user.streakFreezes || 0;
+
+    if (currentCoins >= 50 && currentFreezes < 3) {
+      saveUser({
+        ...user,
+        coins: currentCoins - 50,
+        streakFreezes: currentFreezes + 1
+      });
+    }
   };
 
   const claimQuest = (questId: string, xpReward: number) => {
@@ -332,7 +389,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AppContext.Provider value={{ user, loading, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, resetProgress, signOut }}>
+    <AppContext.Provider value={{ user, loading, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, buyStreakFreeze, resetProgress, signOut }}>
       {children}
     </AppContext.Provider>
   );

@@ -15,6 +15,8 @@ export interface User {
   badges: Badge[];
   completedChallenges: string[];
   streak?: number;
+  streakFreezes?: number;
+  coins?: number;
   lastActiveDate?: string;
   lastLoginDate?: string;
   questProgress?: {

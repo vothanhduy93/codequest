@@ -2,7 +2,7 @@ import React from 'react';
 import { useAppContext } from '../store';
 import { LEVEL_THRESHOLDS, CHALLENGES } from '../data';
 import { formatName } from '../lib/nameUtils';
-import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal } from 'lucide-react';
+import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal, Crown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getNextChallenge } from '../data';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -13,6 +13,9 @@ const getBadgeIcon = (iconName: string) => {
     case 'Layout': return <Layout className="w-8 h-8" />;
     case 'Palette': return <Palette className="w-8 h-8" />;
     case 'Code': return <Code className="w-8 h-8" />;
+    case 'Flame': return <Flame className="w-8 h-8" />;
+    case 'Star': return <Star className="w-8 h-8" />;
+    case 'Crown': return <Crown className="w-8 h-8" />;
     default: return <Award className="w-8 h-8" />;
   }
 };
@@ -22,11 +25,14 @@ const getBadgeColors = (id: string) => {
   if (id === 'html_master') return 'from-rose-400 via-red-500 to-rose-700 shadow-red-500/50 text-white border-red-300';
   if (id === 'css_master') return 'from-cyan-400 via-blue-500 to-indigo-600 shadow-blue-500/50 text-white border-cyan-300';
   if (id === 'js_ninja') return 'from-yellow-300 via-amber-400 to-orange-500 shadow-amber-500/50 text-slate-900 border-amber-200';
+  if (id === 'streak_7') return 'from-orange-400 via-orange-500 to-red-500 shadow-orange-500/50 text-white border-orange-300';
+  if (id === 'streak_30') return 'from-yellow-300 via-yellow-500 to-amber-600 shadow-yellow-500/50 text-slate-900 border-yellow-200';
+  if (id === 'streak_100') return 'from-fuchsia-400 via-purple-500 to-indigo-600 shadow-purple-500/50 text-white border-fuchsia-300';
   return 'from-slate-300 via-slate-400 to-slate-500 shadow-slate-500/50 text-white border-slate-200';
 };
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
-  const { user, resetProgress, claimQuest } = useAppContext();
+  const { user, resetProgress, claimQuest, buyStreakFreeze } = useAppContext();
 
   const currentLevelXp = LEVEL_THRESHOLDS[user.level - 1] || 0;
   const nextLevelXp = LEVEL_THRESHOLDS[user.level] || currentLevelXp + 1000;
@@ -74,11 +80,16 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
         )}
 
         {/* Chuỗi ngày học tập (Streak) */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-1 glass p-6 bg-orange-400/10 border-orange-400/30">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-1 glass p-6 bg-orange-400/10 border-orange-400/30 flex flex-col justify-between">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-orange-400/20 pb-4 mb-4">
             <div className="flex items-center gap-4">
-              <div className="bg-orange-500/20 p-4 rounded-full text-orange-400">
+              <div className="bg-orange-500/20 p-4 rounded-full text-orange-400 relative">
                 <Flame size={32} className={user.streak && user.streak > 0 ? "animate-pulse" : ""} />
+                {user.streakFreezes ? (
+                  <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-slate-900 shadow-md flex items-center gap-1">
+                    ❄️ {user.streakFreezes}
+                  </div>
+                ) : null}
               </div>
               <div>
                 <h3 className="text-orange-400 font-bold mb-1">Chuỗi ngày học tập</h3>
@@ -90,6 +101,27 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
                 </p>
               </div>
             </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-400 font-medium flex items-center gap-1">❄️ Khóa bảo vệ</span>
+              <span className="font-bold text-slate-200">{user.streakFreezes || 0} / 3</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-400 font-medium flex items-center gap-1">💰 Xu hiện tại</span>
+              <span className="font-bold text-yellow-400">{user.coins || 0}</span>
+            </div>
+            <button 
+              onClick={() => buyStreakFreeze()}
+              id="buy-freeze-btn"
+              disabled={(user.coins || 0) < 50 || (user.streakFreezes || 0) >= 3}
+              className="mt-2 w-full py-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-blue-500/30 text-sm flex justify-center items-center gap-2"
+            >
+              Mua Khóa (50 xu)
+            </button>
+            <p className="text-xs text-slate-400 mt-2">
+              💡 <span className="italic">Hoàn thành bài tập (2 XP = 1 Xu) hoặc <br/>làm nhiệm vụ hàng ngày để nhận xu!</span>
+            </p>
           </div>
         </motion.div>
 

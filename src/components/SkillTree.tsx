@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CHALLENGES } from '../data';
 import { useAppContext } from '../store';
-import { Lock, Star, Check, Bot, Loader2, Sparkles } from 'lucide-react';
+import { Lock, Star, Check, Bot, Loader2, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -26,7 +26,6 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
       });
       const data = await response.json();
       if (response.ok && data) {
-         // Data is the challenge object, give it a random ID
          data.id = `ai_${Date.now()}`;
          data.kind = 'lesson';
          data.difficulty = 'Trung bình';
@@ -43,161 +42,84 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
     }
   };
 
-  // Categories
-  const categories = [
-    { id: 'html', title: 'HTML', color: 'text-orange-400', bg: 'bg-orange-500' },
-    { id: 'css', title: 'CSS', color: 'text-blue-400', bg: 'bg-blue-500' },
-    { id: 'js', title: 'JavaScript', color: 'text-yellow-400', bg: 'bg-yellow-500' }
-  ];
-
   const grouped = {
     html: CHALLENGES.filter(c => c.type === 'html'),
     css: CHALLENGES.filter(c => c.type === 'css'),
     js: CHALLENGES.filter(c => c.type === 'js'),
   };
 
-  // Logic: Must complete all non-generated HTML lessons (or at least some) to unlock CSS/JS?
-  // Let's require just "html_6" (the last basic HTML one) to be completed to unlock CSS & JS.
-  // Or require ALL html challenges? There are 106 HTML challenges!
-  // It's better to require a specific node, e.g., the last manual HTML challenge (html_6).
-  const isHtmlPassed = user.completedChallenges.includes('html_6');
+  const isHtmlPassed = user.completedChallenges.includes('html_10');
 
-  // We could draw them as long lists of nodes
-  return (
-    <div className="w-full max-w-5xl mx-auto py-8">
-      <h2 className="text-3xl font-bold text-center text-slate-50 mb-8 font-sans">Bản Đồ Kỹ Năng</h2>
-      
-      <div className="relative flex flex-col items-center pb-24">
-        {/* Draw path line in background */}
-        <div className="absolute top-0 bottom-0 w-2 bg-slate-800 rounded-full left-1/2 -translate-x-1/2 -z-10" />
-
-        {/* HTML Section */}
-        <div className="w-full flex flex-col items-center">
-          <div className="bg-orange-500/20 text-orange-400 font-bold px-6 py-2 rounded-full mb-6 border border-orange-500/50">Vùng đất HTML</div>
-          {grouped.html.slice(0, 15).map((challenge, index) => {
+  const renderList = (categoryKey: 'html' | 'css' | 'js', title: string, colorClass: string, isUnlocked: boolean) => {
+    const challenges = grouped[categoryKey];
+    
+    return (
+      <div className="mb-12">
+        <h3 className={cn("text-xl font-bold mb-4 flex items-center gap-2", colorClass)}>
+          {title}
+          {!isUnlocked && <Lock size={18} className="text-slate-500" />}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-l-2 border-slate-800/50 pl-4 py-2">
+          {challenges.map((challenge, index) => {
             const isCompleted = user.completedChallenges.includes(challenge.id);
-            const globalIndex = grouped.html.findIndex(c => c.id === challenge.id);
-            const isLocked = globalIndex > 0 && !user.completedChallenges.includes(grouped.html[globalIndex - 1].id);
-            
-            // Winding path layout
-            const offset = (index % 2 === 0) ? -60 : 60;
-            const delay = index * 0.05;
+            const isLocked = !isUnlocked || (index > 0 && !user.completedChallenges.includes(challenges[index - 1].id));
+            const isCurrent = !isLocked && !isCompleted && (index === 0 || user.completedChallenges.includes(challenges[index - 1].id));
 
             return (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay }}
-                key={challenge.id} 
-                className="relative mb-8"
-                style={{ left: offset }}
+              <button
+                key={challenge.id}
+                onClick={() => !isLocked && onSelectChallenge(challenge.id)}
+                disabled={isLocked}
+                className={cn(
+                  "flex items-center text-left py-3 px-4 rounded-xl border transition-all relative overflow-hidden group",
+                  isLocked ? "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed opacity-60" :
+                  isCompleted ? "bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-500" :
+                  isCurrent ? "bg-slate-800 border-slate-500 text-white shadow-lg relative hover:border-slate-400 z-10" : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
+                )}
               >
-                <button
-                  onClick={() => !isLocked && onSelectChallenge(challenge.id)}
-                  className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center border-4 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-transform hover:scale-110 relative group",
-                    isLocked ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed" :
-                    isCompleted ? "bg-orange-500 border-orange-300 text-white" :
-                    (globalIndex === 0 || user.completedChallenges.includes(grouped.html[globalIndex - 1].id)) ? "bg-orange-600 border-orange-400 text-white animate-pulse shadow-[0_0_25px_rgba(234,88,12,0.6)]" : "bg-orange-600 border-orange-400 text-white"
-                  )}
-                >
-                  {isLocked ? <Lock size={24} /> : isCompleted ? <Check size={28} /> : <Star size={28} className="fill-current" />}
-                  
-                  {/* Tooltip Title */}
-                  <div className={cn(
-                    "absolute top-1/2 -translate-y-1/2 w-48 text-center px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal z-20",
-                    offset < 0 ? "left-[120%]" : "right-[120%]"
-                  )}>
+                {isCurrent && <div className={cn("absolute inset-0 opacity-10 pointer-events-none animate-pulse", colorClass.replace('text-', 'bg-'))} />}
+                
+                <div className={cn(
+                  "w-10 h-10 shrink-0 rounded-full flex items-center justify-center mr-4",
+                  isLocked ? "bg-slate-800 text-slate-600" :
+                  isCompleted ? cn("text-white", colorClass.replace('text-', 'bg-')) :
+                  isCurrent ? cn("text-white shadow-lg", colorClass.replace('text-', 'bg-'), colorClass.replace('text-', 'shadow-').replace('400', '500/50')) :
+                  "bg-slate-800 text-slate-400"
+                )}>
+                  {isLocked ? <Lock size={16} /> : isCompleted ? <Check size={18} /> : <Star size={18} className={cn("fill-current", isCurrent ? "" : "opacity-30")} />}
+                </div>
+                
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-1 opacity-70", isCurrent ? colorClass : "")}>
+                    Bài {index + 1}
+                  </div>
+                  <div className={cn("font-medium truncate transition-colors", isCurrent ? "text-white" : "", isLocked ? "text-slate-500" : "")}>
                     {challenge.title}
                   </div>
-                </button>
-              </motion.div>
+                </div>
+                
+                {!isLocked && (
+                  <ChevronRight size={18} className={cn("opacity-0 transition-all -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-slate-400", isCurrent ? "opacity-100 translate-x-0" : "")} />
+                )}
+              </button>
             )
           })}
-          {grouped.html.length > 15 && (
-             <div className="text-slate-500 text-sm italic mb-12">... và {grouped.html.length - 15} bài luyện tập khác</div>
-          )}
         </div>
+      </div>
+    );
+  };
 
-        {/* Branching CSS and JS */}
-        <div className="w-full relative mt-8">
-           {/* Branching Lines */}
-           <div className="absolute -top-12 left-1/4 right-1/4 h-12 border-t-2 border-l-2 border-r-2 border-slate-800 rounded-t-3xl -z-10" />
-           <div className="absolute top-0 left-1/4 h-full w-2 bg-slate-800 -translate-x-1/2 -z-10" />
-           <div className="absolute top-0 right-1/4 h-full w-2 bg-slate-800 translate-x-1/2 -z-10" />
-
-           <div className="flex justify-between w-full px-12 md:px-32">
-              {/* CSS Branch */}
-              <div className="flex flex-col items-center w-1/2">
-                <div className={cn("px-6 py-2 rounded-full mb-6 border font-bold", isHtmlPassed ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-slate-800 text-slate-500 border-slate-700")}>
-                  Ảo thuật CSS
-                </div>
-                {grouped.css.slice(0, 15).map((challenge, index) => {
-                  const isCompleted = user.completedChallenges.includes(challenge.id);
-                  const globalIndex = grouped.css.findIndex(c => c.id === challenge.id);
-                  const isLocked = !isHtmlPassed || (globalIndex > 0 && !user.completedChallenges.includes(grouped.css[globalIndex - 1].id));
-                  
-                  return (
-                    <motion.div key={challenge.id} className="relative mb-8" style={{ left: (index % 2 === 0) ? -20 : 20 }}>
-                      <button
-                        onClick={() => !isLocked && onSelectChallenge(challenge.id)}
-                        className={cn(
-                          "w-14 h-14 rounded-full flex items-center justify-center border-4 shadow-lg transition-transform hover:scale-110 group",
-                          isLocked ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed" :
-                          isCompleted ? "bg-blue-500 border-blue-300 text-white" :
-                          (globalIndex === 0 || user.completedChallenges.includes(grouped.css[globalIndex - 1].id)) ? "bg-blue-600 border-blue-400 text-white animate-pulse shadow-[0_0_20px_rgba(59,130,246,0.6)]" : "bg-blue-600 border-blue-400 text-white"
-                        )}
-                      >
-                        {isLocked ? <Lock size={20} /> : isCompleted ? <Check size={24} /> : <Star size={24} className="fill-current" />}
-                        
-                        <div className={cn(
-                          "absolute top-1/2 -translate-y-1/2 w-48 text-center px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal z-20",
-                          (index % 2 === 0) ? "left-[120%]" : "right-[120%]"
-                        )}>
-                          {challenge.title}
-                        </div>
-                      </button>
-                    </motion.div>
-                  )
-                })}
-              </div>
-
-              {/* JS Branch */}
-              <div className="flex flex-col items-center w-1/2">
-                <div className={cn("px-6 py-2 rounded-full mb-6 border font-bold", isHtmlPassed ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/50" : "bg-slate-800 text-slate-500 border-slate-700")}>
-                  Ma thuật JS
-                </div>
-                {grouped.js.slice(0, 15).map((challenge, index) => {
-                  const isCompleted = user.completedChallenges.includes(challenge.id);
-                  const globalIndex = grouped.js.findIndex(c => c.id === challenge.id);
-                  const isLocked = !isHtmlPassed || (globalIndex > 0 && !user.completedChallenges.includes(grouped.js[globalIndex - 1].id));
-                  
-                  return (
-                    <motion.div key={challenge.id} className="relative mb-8" style={{ left: (index % 2 === 0) ? -20 : 20 }}>
-                      <button
-                        onClick={() => !isLocked && onSelectChallenge(challenge.id)}
-                        className={cn(
-                          "w-14 h-14 rounded-full flex items-center justify-center border-4 shadow-lg transition-transform hover:scale-110 group",
-                          isLocked ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed" :
-                          isCompleted ? "bg-yellow-500 border-yellow-300 text-white" :
-                          (globalIndex === 0 || user.completedChallenges.includes(grouped.js[globalIndex - 1].id)) ? "bg-yellow-600 border-yellow-400 text-white animate-pulse shadow-[0_0_20px_rgba(234,179,8,0.6)]" : "bg-yellow-600 border-yellow-400 text-white"
-                        )}
-                      >
-                        {isLocked ? <Lock size={20} /> : isCompleted ? <Check size={24} /> : <Star size={24} className="fill-current" />}
-                        
-                        <div className={cn(
-                          "absolute top-1/2 -translate-y-1/2 w-48 text-center px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal z-20",
-                          (index % 2 === 0) ? "left-[120%]" : "right-[120%]"
-                        )}>
-                          {challenge.title}
-                        </div>
-                      </button>
-                    </motion.div>
-                  )
-                })}
-              </div>
-           </div>
-        </div>
+  return (
+    <div className="w-full max-w-5xl mx-auto py-8 px-4">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-50 font-sans">Lộ Trình Học Tập</h2>
+        <p className="text-slate-400 mt-2 text-sm max-w-xl">Hoàn thành các bài tập theo thứ tự để mở khóa các kỹ năng mới. Vượt qua thử thách HTML để mở khóa CSS và Javascript.</p>
+      </div>
+      
+      <div className="flex flex-col pb-24">
+        {renderList('html', 'Vùng đất HTML', 'text-orange-400', true)}
+        {renderList('css', 'Ảo thuật CSS', 'text-blue-400', isHtmlPassed)}
+        {renderList('js', 'Ma thuật JS', 'text-yellow-400', isHtmlPassed)}
       </div>
       
       {/* AI Floating Button */}

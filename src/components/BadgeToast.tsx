@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../store';
-import { ShieldAlert, Trophy, Layout, Palette, Code, Award, X, Sparkles, Star } from 'lucide-react';
+import { ShieldAlert, Trophy, Layout, Palette, Code, Award, X, Sparkles, Star, Flame, Crown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const getBadgeIcon = (iconName: string) => {
@@ -11,6 +11,9 @@ const getBadgeIcon = (iconName: string) => {
     case 'Palette': return <Palette className="w-8 h-8" />;
     case 'Code': return <Code className="w-8 h-8" />;
     case 'ShieldAlert': return <ShieldAlert className="w-8 h-8" />;
+    case 'Flame': return <Flame className="w-8 h-8" />;
+    case 'Star': return <Star className="w-8 h-8" />;
+    case 'Crown': return <Crown className="w-8 h-8" />;
     default: return <Award className="w-8 h-8" />;
   }
 };
@@ -20,6 +23,9 @@ const getBadgeColors = (id: string) => {
   if (id === 'html_master') return 'from-rose-400 via-red-500 to-rose-700 shadow-red-500/50 text-white border-red-300';
   if (id === 'css_master') return 'from-cyan-400 via-blue-500 to-indigo-600 shadow-blue-500/50 text-white border-cyan-300';
   if (id === 'js_ninja') return 'from-yellow-300 via-amber-400 to-orange-500 shadow-amber-500/50 text-slate-900 border-amber-200';
+  if (id === 'streak_7') return 'from-orange-400 via-orange-500 to-red-500 shadow-orange-500/50 text-white border-orange-300';
+  if (id === 'streak_30') return 'from-yellow-300 via-yellow-500 to-amber-600 shadow-yellow-500/50 text-slate-900 border-yellow-200';
+  if (id === 'streak_100') return 'from-fuchsia-400 via-purple-500 to-indigo-600 shadow-purple-500/50 text-white border-fuchsia-300';
   return 'from-slate-300 via-slate-400 to-slate-500 shadow-slate-500/50 text-white border-slate-200';
 };
 
