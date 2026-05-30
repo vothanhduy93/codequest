@@ -168,7 +168,18 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-50 flex items-center gap-2"><Star className="text-yellow-400"/> Cấp độ {user.level}</h2>
-            <span className="text-teal-400 font-mono font-bold">{user.xp} / {nextLevelXp} KN</span>
+            <div className="flex gap-1 items-center">
+              <motion.span 
+                 key={user.xp}
+                 initial={{ scale: 1.5, color: '#facc15' }}
+                 animate={{ scale: 1, color: '#2dd4bf' }}
+                 transition={{ duration: 0.5 }}
+                 className="text-teal-400 font-mono font-bold inline-block"
+              >
+                 {user.xp}
+              </motion.span>
+              <span className="text-teal-400 font-mono font-bold"> / {nextLevelXp} KN</span>
+            </div>
           </div>
           <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden">
             <motion.div 
@@ -218,10 +229,17 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
           <p className="text-slate-500 italic">Bạn chưa có huy hiệu nào. Hãy hoàn thành thử thách để nhận!</p>
         ) : (
           <div className="flex flex-wrap gap-6 pt-4 pb-10">
-            {user.badges.map(badge => (
-              <div key={badge.id} className="relative group flex flex-col items-center">
+            {user.badges.map((badge, idx) => (
+              <motion.div 
+                key={badge.id}
+                initial={{ scale: 0, rotate: -45, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15, delay: idx * 0.1 }}
+                whileHover={{ scale: 1.1, rotate: 5, y: -5 }}
+                className="relative group flex flex-col items-center cursor-default"
+              >
                 {/* Badge Container */}
-                <div className={`relative w-24 h-24 flex items-center justify-center rounded-full bg-gradient-to-br ${getBadgeColors(badge.id)} border-4 shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-hover:shadow-2xl z-10 cursor-default`}>
+                <div className={`relative w-24 h-24 flex items-center justify-center rounded-full bg-gradient-to-br ${getBadgeColors(badge.id)} border-4 shadow-lg z-10`}>
                   
                   {/* Subtle inner ring */}
                   <div className="absolute inset-1 rounded-full border-2 border-white/30 mix-blend-overlay"></div>
@@ -252,7 +270,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
                      </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

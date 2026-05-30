@@ -48,7 +48,8 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
     js: CHALLENGES.filter(c => c.type === 'js'),
   };
 
-  const isHtmlPassed = user.completedChallenges.includes('html_10');
+  const isHtmlPassed = user.completedChallenges.includes('html_40');
+  const isCssPassed = user.completedChallenges.includes('css_55');
 
   const renderList = (categoryKey: 'html' | 'css' | 'js', title: string, colorClass: string, isUnlocked: boolean) => {
     const challenges = grouped[categoryKey];
@@ -113,13 +114,13 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
     <div className="w-full max-w-5xl mx-auto py-8 px-4">
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-slate-50 font-sans">Lộ Trình Học Tập</h2>
-        <p className="text-slate-400 mt-2 text-sm max-w-xl">Hoàn thành các bài tập theo thứ tự để mở khóa các kỹ năng mới. Vượt qua thử thách HTML để mở khóa CSS và Javascript.</p>
+        <p className="text-slate-400 mt-2 text-sm max-w-xl">Hoàn thành các bài tập theo thứ tự để mở khóa các kỹ năng mới. Vượt qua thử thách HTML để mở khóa CSS, và hoàn thành CSS để vươn tới Javascript.</p>
       </div>
       
       <div className="flex flex-col pb-24">
         {renderList('html', 'Vùng đất HTML', 'text-orange-400', true)}
         {renderList('css', 'Ảo thuật CSS', 'text-blue-400', isHtmlPassed)}
-        {renderList('js', 'Ma thuật JS', 'text-yellow-400', isHtmlPassed)}
+        {renderList('js', 'Ma thuật JS', 'text-yellow-400', isCssPassed)}
       </div>
       
       {/* AI Floating Button */}

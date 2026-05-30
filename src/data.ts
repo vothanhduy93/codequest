@@ -171,7 +171,7 @@ export const CHALLENGES: Challenge[] = [
     solutionExplanation: 'Thẻ <div> bản thân nó không làm thay đổi hiển thị, nhưng nó giống cái bao tải gom mọi thứ vào để sau này CSS sắp xếp dễ hơn.',
     defaultCode: '<!-- Tạo thẻ div chứa các thẻ con -->\n',
     xpReward: 220,
-    validationSnippet: "const div = document.querySelector('div'); return div && div.querySelector('h1') && div.querySelector('p');",
+    validationSnippet: "const div = document.querySelector('div'); return div !== null && div.querySelector('h1') !== null && div.querySelector('p') !== null;",
   },
   {
     id: 'html_9',
@@ -201,8 +201,9 @@ export const CHALLENGES: Challenge[] = [
     solutionExplanation: 'Mọi <input> bên trong <form> sẽ gói thành một bộ dữ liệu, và <button> mặc định sẽ nộp dữ liệu biểu mẫu.',
     defaultCode: '<!-- Tạo biểu mẫu form -->\n',
     xpReward: 350,
-    validationSnippet: "const f = document.querySelector('form'); return f && f.querySelector('input') && f.querySelector('button');",
+    validationSnippet: "const f = document.querySelector('form'); return f !== null && f.querySelector('input') !== null && f.querySelector('button') !== null;",
   },
+  ...extraHtml,
 
   // ==============================
   // CSS LESSONS
@@ -358,6 +359,7 @@ export const CHALLENGES: Challenge[] = [
     xpReward: 350,
     validationSnippet: "const el = document.querySelector('.btn'); return el && window.getComputedStyle(el).transitionDuration.includes('0.3s');",
   },
+  ...extraCss,
 
   // ==============================
   // JAVASCRIPT LESSONS
@@ -512,8 +514,6 @@ export const CHALLENGES: Challenge[] = [
     xpReward: 600,
     validationSnippet: "const code = document.querySelector('script')?.textContent || ''; return code.includes('setTimeout') && code.includes('2000');",
   },
-  ...extraHtml,
-  ...extraCss,
   ...extraJs
 ];
 

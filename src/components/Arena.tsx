@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
 import { CHALLENGES, getNextChallenge } from '../data';
-import { Play, CheckCircle, Lightbulb, Lock, BookmarkPlus, X } from 'lucide-react';
+import { Play, CheckCircle, Lightbulb, Lock, BookmarkPlus, X, Bot, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import Editor, { useMonaco } from '@monaco-editor/react';
@@ -43,6 +43,9 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const [xpGainedAmt, setXpGainedAmt] = useState(0);
   const [tutorMessage, setTutorMessage] = useState<string>('');
   const [isTutorLoading, setIsTutorLoading] = useState(false);
+  const [showReviewCode, setShowReviewCode] = useState(false);
+  const [isReviewLoading, setIsReviewLoading] = useState(false);
+  const [reviewResult, setReviewResult] = useState('');
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
@@ -124,34 +127,73 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     }
   }, [activeChallengeId, activeChallenge]);
 
+  const handleNextChallenge = () => {
+    setSuccess(false);
+    setTutorMessage('');
+    setShowReviewCode(false);
+    setReviewResult('');
+    
+    if (customChallenge && onChallengeComplete) {
+      onChallengeComplete();
+      return;
+    }
+
+    if (mode === 'learn') {
+      const currentIndex = filteredChallenges.findIndex(c => c.id === activeChallengeId);
+      const next = filteredChallenges[currentIndex + 1];
+      if (next) {
+        setActiveChallengeId(next.id);
+        if (selectedCategory !== 'all' && selectedCategory !== next.type) {
+          setSelectedCategory(next.type);
+        }
+      } else {
+        if (onChallengeComplete) onChallengeComplete(); // Fallback if no next
+      }
+    } else if (mode === 'time_attack') {
+      setTimeLeft(prev => Math.min(prev + 10, 60));
+      const randomChallenge = filteredChallenges[Math.floor(Math.random() * filteredChallenges.length)];
+      setActiveChallengeId(randomChallenge.id);
+    }
+  };
+
+  const handleReviewCode = async () => {
+    if (!activeChallenge) return;
+    setIsReviewLoading(true);
+    setShowReviewCode(true);
+
+    let combined = htmlCode;
+    if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
+    if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
+
+    try {
+      const res = await fetch('/api/review-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: combined,
+          challengeTitle: activeChallenge.title
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReviewResult(data.review);
+      } else {
+        setReviewResult('Oops, có lỗi xảy ra hoặc gia sư đang bận!');
+      }
+    } catch(e) {
+      setReviewResult('Lỗi kết nối khi gọi chuyên gia!');
+    }
+    setIsReviewLoading(false);
+  };
+
   useEffect(() => {
     let timeout: any;
-    if (success) {
+    if (success && mode === 'time_attack') {
       timeout = setTimeout(() => {
-        setSuccess(false);
-        setTutorMessage('');
-        
-        if (customChallenge && onChallengeComplete) {
-          onChallengeComplete();
-          return;
-        }
-
-        if (mode === 'learn') {
-          const currentIndex = filteredChallenges.findIndex(c => c.id === activeChallengeId);
-          const next = filteredChallenges[currentIndex + 1];
-          if (next) {
-            setActiveChallengeId(next.id);
-            if (selectedCategory !== 'all' && selectedCategory !== next.type) {
-              setSelectedCategory(next.type);
-            }
-          }
-        } else if (mode === 'time_attack') {
-          // Extra time reward
-          setTimeLeft(prev => Math.min(prev + 10, 60));
-          const randomChallenge = filteredChallenges[Math.floor(Math.random() * filteredChallenges.length)];
-          setActiveChallengeId(randomChallenge.id);
-        }
-      }, 2000);
+        handleNextChallenge();
+      }, 1500);
     }
     return () => clearTimeout(timeout);
   }, [success, activeChallengeId, filteredChallenges, selectedCategory, mode]);
@@ -192,7 +234,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         }
         window.addEventListener('message', (event) => {
           if (event.data === 'validate') {
-            const result = __validate();
+            const result = !!__validate();
             window.parent.postMessage({ type: 'validation_result', success: result }, '*');
           }
         });
@@ -553,17 +595,68 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                {mode === 'time_attack' ? (
                  <>
                    <p className="text-xl font-bold text-yellow-300">🔥 +10 Giây</p>
-                   <p className="text-green-100">+ {xpGainedAmt > 0 ? xpGainedAmt : 0} KN</p>
+                   <motion.p 
+                     initial={{ scale: 0.5, y: 20 }}
+                     animate={{ scale: 1.5, y: 0 }}
+                     transition={{ duration: 0.5, type: 'spring', bounce: 0.6 }}
+                     className="text-yellow-300 font-extrabold text-2xl mt-4 drop-shadow-md"
+                   >
+                     + {xpGainedAmt > 0 ? xpGainedAmt : 0} KN
+                   </motion.p>
                  </>
                ) : (
-                 <>
-                   {xpGainedAmt > 0 ? (
-                     <p className="text-green-100">+ {xpGainedAmt} KN</p>
+                 <div className="flex flex-col items-center w-full max-w-3xl">
+                   {showReviewCode ? (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 20 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       className="bg-slate-900/80 p-6 rounded-2xl border border-indigo-500/50 w-full mb-6 mt-4 max-h-[50vh] overflow-y-auto text-left"
+                     >
+                        <h4 className="flex items-center gap-2 text-indigo-400 font-bold mb-4 text-xl border-b border-indigo-500/30 pb-2">
+                           {isReviewLoading ? <Loader2 className="animate-spin" /> : <Bot />} Bộ Phân Tích Clean Code AI
+                        </h4>
+                        {isReviewLoading ? (
+                          <div className="text-slate-300 animate-pulse flex flex-col gap-2">
+                            <div className="h-4 bg-slate-700/50 rounded w-3/4"></div>
+                            <div className="h-4 bg-slate-700/50 rounded w-full"></div>
+                            <div className="h-4 bg-slate-700/50 rounded w-5/6"></div>
+                            <span className="text-sm mt-2 text-indigo-300 block">Đang phân tích độ phức tạp thuật toán và cách đặt tên biến...</span>
+                          </div>
+                        ) : (
+                          <div className="text-slate-200 markdown-body prose prose-invert max-w-none text-sm lg:text-base">
+                             <Markdown>{reviewResult}</Markdown>
+                          </div>
+                        )}
+                     </motion.div>
                    ) : (
-                     <p className="text-green-100 italic">(Thực hành lại - Không cộng thêm điểm)</p>
+                     <div className="mt-4 mb-8">
+                       {xpGainedAmt > 0 ? (
+                         <motion.p 
+                           initial={{ scale: 0.5, y: 20 }}
+                           animate={{ scale: 1.5, y: 0 }}
+                           transition={{ duration: 0.5, type: 'spring', bounce: 0.6 }}
+                           className="text-yellow-300 font-extrabold text-3xl drop-shadow-[0_0_15px_rgba(253,224,71,0.5)]"
+                         >
+                           + {xpGainedAmt} KN
+                         </motion.p>
+                       ) : (
+                         <p className="text-green-100/70 italic text-lg">(Thực hành lại - Không cộng thêm điểm)</p>
+                       )}
+                     </div>
                    )}
-                   <div className="mt-6 text-green-100 font-medium">Tự động chuyển bài...</div>
-                 </>
+                   
+                   <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                     {!showReviewCode && (
+                       <button onClick={handleReviewCode} className="py-3 px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-bold shadow-[0_0_20px_rgba(79,70,229,0.4)] flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95">
+                         <Bot size={20} />
+                         Phân tích Clean Code
+                       </button>
+                     )}
+                     <button onClick={handleNextChallenge} className="py-3 px-8 bg-white hover:bg-slate-100 text-green-600 rounded-full font-black shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95">
+                       Tiếp tục <ChevronRight size={20} className="stroke-[3px]" />
+                     </button>
+                   </div>
+                 </div>
                )}
              </motion.div>
             )}
