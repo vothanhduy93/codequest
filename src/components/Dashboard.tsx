@@ -2,10 +2,28 @@ import React from 'react';
 import { useAppContext } from '../store';
 import { LEVEL_THRESHOLDS, CHALLENGES } from '../data';
 import { formatName } from '../lib/nameUtils';
-import { Trophy, Star, ShieldAlert, Zap, Flame, User } from 'lucide-react';
+import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getNextChallenge } from '../data';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+
+const getBadgeIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'Trophy': return <Trophy className="w-8 h-8" />;
+    case 'Layout': return <Layout className="w-8 h-8" />;
+    case 'Palette': return <Palette className="w-8 h-8" />;
+    case 'Code': return <Code className="w-8 h-8" />;
+    default: return <Award className="w-8 h-8" />;
+  }
+};
+
+const getBadgeColors = (id: string) => {
+  if (id === 'first_blood') return 'from-yellow-300 via-yellow-400 to-yellow-600 shadow-yellow-500/50 text-yellow-900 border-yellow-200';
+  if (id === 'html_master') return 'from-rose-400 via-red-500 to-rose-700 shadow-red-500/50 text-white border-red-300';
+  if (id === 'css_master') return 'from-cyan-400 via-blue-500 to-indigo-600 shadow-blue-500/50 text-white border-cyan-300';
+  if (id === 'js_ninja') return 'from-yellow-300 via-amber-400 to-orange-500 shadow-amber-500/50 text-slate-900 border-amber-200';
+  return 'from-slate-300 via-slate-400 to-slate-500 shadow-slate-500/50 text-white border-slate-200';
+};
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { user, resetProgress, claimQuest } = useAppContext();
@@ -162,17 +180,45 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
       </div>
 
       {/* Huy hiệu */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass p-6">
-        <h2 className="text-xl font-bold text-slate-50 mb-6">Bộ sưu tập Huy Hiệu</h2>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass p-6 mb-20 md:mb-0">
+        <h2 className="text-xl font-bold text-slate-50 mb-6 flex items-center gap-2"><Medal className="text-yellow-400" /> Bộ sưu tập Huy Hiệu</h2>
         {user.badges.length === 0 ? (
           <p className="text-slate-500 italic">Bạn chưa có huy hiệu nào. Hãy hoàn thành thử thách để nhận!</p>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-6 pt-4 pb-10">
             {user.badges.map(badge => (
-              <div key={badge.id} className="group relative bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-center w-24 h-24 hover:bg-white/10 transition">
-                <ShieldAlert className="text-teal-400 w-10 h-10" />
-                <div className="absolute opacity-0 group-hover:opacity-100 glass text-slate-50 text-xs p-2 -bottom-10 whitespace-nowrap transition-opacity z-10">
-                  {badge.name}
+              <div key={badge.id} className="relative group flex flex-col items-center">
+                {/* Badge Container */}
+                <div className={`relative w-24 h-24 flex items-center justify-center rounded-full bg-gradient-to-br ${getBadgeColors(badge.id)} border-4 shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-hover:shadow-2xl z-10 cursor-default`}>
+                  
+                  {/* Subtle inner ring */}
+                  <div className="absolute inset-1 rounded-full border-2 border-white/30 mix-blend-overlay"></div>
+                  
+                  {/* Glossy reflection */}
+                  <div className="absolute inset-x-2 top-2 h-1/2 bg-gradient-to-b from-white/60 to-transparent rounded-t-full z-0 opacity-70"></div>
+
+                  {/* Icon */}
+                  <div className="relative z-10 drop-shadow-md">
+                     {getBadgeIcon(badge.icon)}
+                  </div>
+
+                  {/* Sparkles on hover */}
+                  <Sparkles className="absolute -top-3 -right-2 text-yellow-200 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity animate-pulse duration-700 delay-100 z-20 drop-shadow-md" />
+                  <Star className="absolute -bottom-1 -left-2 text-white w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity animate-bounce duration-500 z-20 drop-shadow-md" />
+                  <Star className="absolute top-4 -left-3 text-white/80 w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity animate-pulse duration-1000 delay-300 z-20" />
+                </div>
+                
+                {/* Tooltip Content */}
+                <div className="absolute top-28 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-20 pointer-events-none w-56 text-center">
+                  <div className="bg-slate-900 border border-slate-600/50 rounded-xl p-4 shadow-2xl relative">
+                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900 border-t border-l border-slate-600/50 rotate-45"></div>
+                     <div className="relative z-10">
+                       <h4 className="font-bold text-slate-50 text-sm mb-1">{badge.name}</h4>
+                       <p className="text-xs text-slate-300 leading-relaxed mb-2">{badge.description}</p>
+                       <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-slate-500 to-transparent opacity-50 mb-2"></div>
+                       <span className="text-[10px] uppercase font-bold text-yellow-400 tracking-wider">🌟 Đã sở hữu</span>
+                     </div>
+                  </div>
                 </div>
               </div>
             ))}

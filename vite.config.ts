@@ -22,6 +22,9 @@ export default defineConfig(() => {
               if (id.includes('firebase')) {
                 return 'firebase';
               }
+              if (id.includes('monaco-editor')) {
+                return 'monaco';
+              }
               if (id.includes('lucide-react')) {
                 return 'icons';
               }
