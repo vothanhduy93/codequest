@@ -440,16 +440,13 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                 </button>
                 {mode !== 'time_attack' && (
                   <button onClick={() => { playSound('pop'); setShowHint(!showHint); }} className="text-yellow-500 hover:text-yellow-400 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
-                    <Lightbulb size={14} /> {showHint ? 'Ẩn gợi ý' : 'Gợi ý giải'}
+                    <Lightbulb size={14} /> {showHint ? 'Ẩn đáp án' : 'Xem đáp án'}
                   </button>
                 )}
               </div>
             </div>
             {showHint && mode !== 'time_attack' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/10 border-b border-white/10 p-4 text-sm mx-4 mt-2 rounded-xl flex flex-col gap-3 max-h-[300px] overflow-y-auto">
-                <div className="text-yellow-400">
-                  <span className="font-bold">💡 Gợi ý:</span> {activeChallenge.hint}
-                </div>
                 {activeChallenge.solution && (
                   <div className="mt-2">
                     <span className="font-bold text-teal-400">✅ Đáp án tham khảo:</span>
