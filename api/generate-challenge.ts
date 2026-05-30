@@ -58,6 +58,6 @@ Return JSON schema only, no markup in output (we will parse JSON).`;
     res.status(200).json(data);
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Lỗi sinh đề bài từ AI.' });
+    res.status(500).json({ error: `Lỗi sinh đề bài từ AI: ${err?.message || err}` });
   }
 }

@@ -39,6 +39,6 @@ Trả về phản hồi bằng Tiếng Việt thân thiện, rõ ràng, trình b
     res.status(200).json({ review: response.text });
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Hệ thống đánh giá đang quá tải, vui lòng thử lại sau.' });
+    res.status(500).json({ error: `Hệ thống đánh giá lỗi: ${err?.message || err}` });
   }
 }

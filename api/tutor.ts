@@ -40,6 +40,6 @@ Nhưng đoạn mã này đang bị lỗi hoặc làm sai nhiệm vụ. Hãy đó
     res.status(200).json({ explanation: response.text });
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Gia sư đang bận nghỉ phép, hãy thử lại.' });
+    res.status(500).json({ error: `Gia sư đang lỗi: ${err?.message || err}` });
   }
 }
