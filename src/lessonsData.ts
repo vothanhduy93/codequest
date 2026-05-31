@@ -14,7 +14,7 @@ const buildHTML = (data: any[]): Challenge[] => data.map(d => ({
   solutionExplanation: d.exp || 'Hoàn thành xuất sắc bộ cục HTML!',
   defaultCode: d.defCode || '<!-- Code ở đây -->\n',
   xpReward: 150 + (d.n * 10),
-  validationSnippet: `const code = (document.body.innerHTML + " " + (typeof __userRawCode !== 'undefined' ? __userRawCode : "")).toLowerCase(); ${d.val}`,
+  validationSnippet: `const code = document.body.innerHTML.replace(/<!--[\\s\\S]*?-->/g, "").toLowerCase(); ${d.val}`,
 }));
 
 const buildCSS = (data: any[]): Challenge[] => data.map(d => ({
@@ -46,7 +46,7 @@ const buildJS = (data: any[]): Challenge[] => data.map(d => ({
   solutionExplanation: d.exp || 'Logic rất sắc bén!',
   defaultCode: `<script>\n  ${d.defCode || '// Viết thuật toán vào đây'}\n</script>`,
   xpReward: 150 + (d.n * 10),
-  validationSnippet: `const code = document.querySelector("script")?.textContent || ""; ${d.val}`,
+  validationSnippet: `const code = (document.querySelector("script")?.textContent || "").replace(/\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\//g, ""); ${d.val}`,
 }));
 
 
@@ -107,7 +107,7 @@ const rawHTML = [
   { n: 63, title: 'Phong Bì Thư Báo (Address)', desc: 'Xác định nhanh đây là phần địa chỉ công ty.', ins: 'Dán tem `<address>Quận 1, TP.HCM</address>`', sol: '<address>Quận 1, TP.HCM</address>', val: 'return code.includes("<address>");', exp: 'Trình duyệt thường hay nghiêng văn bản trong thẻ này và giúp SEO Maps mượt.', hint: '<address>...</address>' },
   { n: 64, title: 'Mượn Lời Danh Nhân (Blockquote)', desc: 'Trích dẫn nguyên văn một câu nói nổi tiếng.', ins: 'Mượn lời `<blockquote>Tôi tư duy, nên tôi tồn tại.</blockquote>`', sol: '<blockquote>Tôi tư duy, nên tôi tồn tại.</blockquote>', val: 'return code.includes("<blockquote");', exp: 'Mọt công cụ hay để làm web báo chí/blog.', hint: '<blockquote>...</blockquote>' },
   { n: 65, title: 'Thời Gian Vĩnh Hằng (Time)', desc: 'Để quy chuẩn ngày giờ giúp con BOT đọc hiểu ra số timestamp.', ins: 'Thứ 6 `<time datetime="2026-05-30">Ngày Tốt</time>`', sol: '<time datetime="2026-05-30">Ngày Tốt</time>', val: 'return code.includes("<time") && code.includes("datetime=");', exp: 'Không chỉ là dòng chữ, máy móc sẽ đọc được Datetime Format chuẩn.', hint: '<time datetime="...">...</time>' },
-  { n: 66, title: 'Cửa Sổ Bật Lên (Dialog)', desc: 'Tạo Popup/Modal xịn xò mà không cần thư viện Javascript cồng kềnh.', ins: 'Mở cửa sổ `<dialog open>Xin chào!</dialog>`', sol: '<dialog open>Xin chào!</dialog>', val: 'return code.includes("<dialog open>");', exp: 'Thẻ Dialog có tích hợp sẵn các hàm mở/đóng bằng JS siêu tiện lợi.', hint: '<dialog open>...</dialog>' },
+  { n: 66, title: 'Cửa Sổ Bật Lên (Dialog)', desc: 'Tạo Popup/Modal xịn xò mà không cần thư viện Javascript cồng kềnh.', ins: 'Mở cửa sổ `<dialog open>Xin chào!</dialog>`', sol: '<dialog open>Xin chào!</dialog>', val: 'return code.includes("<dialog") && code.includes("open");', exp: 'Thẻ Dialog có tích hợp sẵn các hàm mở/đóng bằng JS siêu tiện lợi.', hint: '<dialog open>...</dialog>' },
   { n: 67, title: 'Bản Đúc Khuôn Mẫu (Template)', desc: 'Chứa code HTML bị ẩn đi, chờ JS vào nhân bản và hiển thị ra.', ins: 'Tạo khuôn `<template id="card">Mẫu</template>`', sol: '<template id="card">Mẫu</template>', val: 'return code.includes("<template");', exp: 'Cốt lõi của việc render danh sách hoặc linh hồn của Web Components.', hint: '<template>...</template>' },
   { n: 68, title: 'Đa Dạng Góc Nhìn (Picture)', desc: 'Tự động đổi ảnh nếu màn hình dọc/ngang thay dùng Media Query CSS.', ins: 'Gói ảnh `<picture><source media="(min-width:650px)" srcset="b.jpg"><img src="a.jpg"></picture>`', sol: '<picture><source media="(min-width:650px)" srcset="b.jpg"><img src="a.jpg"></picture>', val: 'return code.includes("<picture>") && code.includes("<source");', exp: 'Tiết kiệm 3G cho người dùng điện thoại vì nó ép Mobile tự tải ảnh bé.', hint: '<picture><source ...> <img ...></picture>' },
   { n: 69, title: 'Ngủ Đông Tải Chậm (Lazy Loading)', desc: 'Chỉ khi nào cuộn chuột tới bức ảnh thì bức ảnh đó mới bắt đầu tải từ Server.', ins: 'Lười biếng `<img src="a.jpg" loading="lazy">`', sol: '<img src="a.jpg" loading="lazy">', val: 'return code.includes("loading=\\"lazy\\"");', exp: 'Tuyệt chiêu tối ưu tốc độ Web lên 100 điểm Lighthouse một cách cực kì nhàn hạ.', hint: '<img loading="lazy" ...>' },

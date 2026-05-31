@@ -190,7 +190,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         window.onerror = function() { return true; };
         function __validate() {
           try {
-            const __userRawCode = decodeURIComponent("${encodeURIComponent(debouncedCode)}");
             ${activeChallenge.validationSnippet}
           } catch(e) {
             console.error(e);
@@ -311,7 +310,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       )}
 
       {/* Main Workspace */}
-      <div className={cn("flex flex-col gap-6 relative", mode === 'time_attack' ? "lg:col-span-3" : "col-span-1")}>
+      <div className={cn("flex flex-col h-full min-h-0 gap-6 relative", mode === 'time_attack' ? "lg:col-span-3" : "col-span-1")}>
         {mode === 'time_attack' && (!isPlaying) && (
           <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center rounded-2xl border border-white/10">
             <div className="text-center">
