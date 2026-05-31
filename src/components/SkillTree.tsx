@@ -15,14 +15,13 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
 
   const handleGenerateAIChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aiTopic && !aiWeakness) return;
     setIsGenerating(true);
     
     try {
       const response = await fetch('/api/generate-challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: aiTopic, weakness: aiWeakness })
+        body: JSON.stringify({})
       });
       const text = await response.text();
       let data;
@@ -35,7 +34,7 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
       }
 
       if (response.ok && data && !data.error) {
-         data.id = `ai_${Date.now()}`;
+         data.id = `inf_${Date.now()}`;
          data.kind = 'lesson';
          data.difficulty = 'Trung bình';
          if (onStartAIChallenge) onStartAIChallenge(data);
@@ -45,7 +44,7 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
       }
     } catch (e: any) {
       console.error(e);
-      alert(`Không thể kết nối đến máy chủ AI: ${e?.message}`);
+      alert(`Không thể kết nối đến máy chủ: ${e?.message}`);
     } finally {
       setIsGenerating(false);
     }
@@ -132,21 +131,21 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
         {renderList('js', 'Ma thuật JS', 'text-yellow-400', isCssPassed)}
       </div>
       
-      {/* AI Floating Button */}
+      {/* Infinite Lesson Floating Button */}
       <div className="fixed bottom-8 right-8 z-50">
         <button 
           onClick={() => setShowAIModal(true)}
           className="bg-indigo-500/80 hover:bg-indigo-500 text-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(99,102,241,0.5)] border border-indigo-400/50 backdrop-blur-sm transition-all hover:-translate-y-1 group flex items-center gap-3"
         >
-          <Bot size={28} className="group-hover:rotate-12 transition-transform" />
+          <Sparkles size={28} className="group-hover:rotate-12 transition-transform" />
           <div className="text-left hidden md:block">
-            <div className="text-sm font-bold leading-tight">AI Sinh Đề Bài</div>
-            <div className="text-xs text-indigo-200">Luyện tập vô hạn</div>
+            <div className="text-sm font-bold leading-tight">Bài Học Tự Động</div>
+            <div className="text-xs text-indigo-200">Không giới hạn</div>
           </div>
         </button>
       </div>
 
-      {/* AI Modal */}
+      {/* Infinite Modal */}
       <AnimatePresence>
         {showAIModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -169,49 +168,23 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
                     <Sparkles size={28} />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-white">AI Sinh Đề Bài</h2>
-                    <p className="text-indigo-200 text-sm">Luyện tập điểm yếu hoặc chủ đề bất kỳ</p>
+                    <h2 className="text-2xl font-bold text-white">Thử Thách Vô Hạn</h2>
+                    <p className="text-indigo-200 text-sm">Tạo bài tập tự động, không giới hạn</p>
                   </div>
                 </div>
 
                 <form onSubmit={handleGenerateAIChallenge} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-300 mb-2">Chủ đề bạn muốn luyện tập:</label>
-                    <input 
-                      type="text" 
-                      value={aiTopic}
-                      onChange={(e) => { setAiTopic(e.target.value); setAiWeakness(''); }}
-                      placeholder="Ví dụ: Flexbox căn giữa, Tạo Form Login..."
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
-                      disabled={isGenerating || !!aiWeakness}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 h-px bg-white/10"></div>
-                    <div className="text-slate-500 text-sm font-medium">HOẶC</div>
-                    <div className="flex-1 h-px bg-white/10"></div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-slate-300 mb-2">Điểm yếu của bạn là gì?</label>
-                    <input 
-                      type="text" 
-                      value={aiWeakness}
-                      onChange={(e) => { setAiWeakness(e.target.value); setAiTopic(''); }}
-                      placeholder="Ví dụ: Tôi hay nhầm justify-content và align-items..."
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
-                      disabled={isGenerating || !!aiTopic}
-                    />
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-slate-300 text-sm">
+                    Luyện tập các thử thách cấu hình CSS liên tục hàng ngày để lên level. Hệ thống sẽ sinh bài tập ngẫu nhiên dựa theo thuật toán nội bộ thủ tục.
                   </div>
                   
                   <button 
                     type="submit"
-                    disabled={isGenerating || (!aiTopic && !aiWeakness)}
+                    disabled={isGenerating}
                     className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-500/50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-lg shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                   >
                     {isGenerating ? (
-                      <><Loader2 className="animate-spin" size={24} /> Đang tạo bằng Gemini...</>
+                      <><Loader2 className="animate-spin" size={24} /> Đang tạo bài học...</>
                     ) : (
                       'Tạo Đề Bài Ngay'
                     )}

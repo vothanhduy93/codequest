@@ -41,11 +41,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const [showHint, setShowHint] = useState(false);
   const [success, setSuccess] = useState(false);
   const [xpGainedAmt, setXpGainedAmt] = useState(0);
-  const [tutorMessage, setTutorMessage] = useState<string>('');
-  const [isTutorLoading, setIsTutorLoading] = useState(false);
-  const [showReviewCode, setShowReviewCode] = useState(false);
-  const [isReviewLoading, setIsReviewLoading] = useState(false);
-  const [reviewResult, setReviewResult] = useState('');
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
@@ -129,9 +124,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const handleNextChallenge = () => {
     setSuccess(false);
-    setTutorMessage('');
-    setShowReviewCode(false);
-    setReviewResult('');
     
     if (customChallenge && onChallengeComplete) {
       onChallengeComplete();
@@ -154,47 +146,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       const randomChallenge = filteredChallenges[Math.floor(Math.random() * filteredChallenges.length)];
       setActiveChallengeId(randomChallenge.id);
     }
-  };
-
-  const handleReviewCode = async () => {
-    if (!activeChallenge) return;
-    setIsReviewLoading(true);
-    setShowReviewCode(true);
-
-    let combined = htmlCode;
-    if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
-    if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
-
-    try {
-      const res = await fetch('/api/review-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          code: combined,
-          challengeTitle: activeChallenge.title
-        })
-      });
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        setReviewResult(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 100)}...`);
-        setIsReviewLoading(false);
-        return;
-      }
-
-      if (res.ok && data.review) {
-        setReviewResult(data.review);
-      } else {
-        setReviewResult(data.error || 'Oops, có lỗi xảy ra hoặc gia sư đang bận!');
-      }
-    } catch(e: any) {
-      setReviewResult(`Lỗi kết nối: ${e?.message}`);
-    }
-    setIsReviewLoading(false);
   };
 
   useEffect(() => {
@@ -274,40 +225,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             setXpGainedAmt(0);
           }
         } else if (!event.data.success) {
-          // AI Tutor asks Gemini
-          playSound('pop'); // or an error sound if we had one
-          setIsTutorLoading(true);
-          try {
-            const res = await fetch('/api/tutor', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code: debouncedCode,
-                htmlCode,
-                cssCode,
-                jsCode,
-                challengeTitle: activeChallenge.title,
-                challengeInstructions: activeChallenge.instructions
-              })
-            });
-            const text = await res.text();
-            let data;
-            try {
-              data = JSON.parse(text);
-            } catch (e) {
-              setTutorMessage(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 50)}...`);
-              setIsTutorLoading(false);
-              return;
-            }
-            if (data.explanation) {
-              setTutorMessage(data.explanation);
-            } else {
-              setTutorMessage(data.error || 'Oops, có lỗi xảy ra. Bạn thử kiểm tra lại code xem nhé!');
-            }
-          } catch (e: any) {
-            setTutorMessage(`Gia sư AI đang lỗi kết nối: ${e?.message}`);
-          }
-          setIsTutorLoading(false);
+          playSound('pop');
         }
       }
     };
@@ -317,7 +235,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const validateCode = () => {
     playSound('click');
-    setTutorMessage('');
     const iframe = document.getElementById('preview-frame') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage('validate', '*');
@@ -568,35 +485,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
               className="w-full h-full border-none"
               sandbox="allow-scripts allow-same-origin"
             />
-
-            {(tutorMessage || isTutorLoading) && !success && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-4 left-4 right-4 bg-slate-900 border border-teal-500/50 shadow-2xl rounded-xl p-4 flex gap-4 z-10"
-              >
-                <div className="w-10 h-10 rounded-full bg-teal-500/20 flex flex-shrink-0 items-center justify-center text-teal-400">
-                  <Lightbulb size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-teal-400 font-bold mb-1 text-sm flex items-center gap-2">
-                    🤖 Gia sư AI
-                    {isTutorLoading && <span className="flex gap-1"><span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce"></span><span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span><span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span></span>}
-                  </h4>
-                  {tutorMessage && (
-                    <div className="text-slate-200 text-sm markdown-body max-w-none max-h-48 overflow-y-auto pr-2">
-                      <Markdown>{tutorMessage}</Markdown>
-                    </div>
-                  )}
-                </div>
-                <button 
-                  onClick={() => setTutorMessage('')}
-                  className="text-slate-400 hover:text-white items-start py-1"
-                >
-                  ✕
-                </button>
-              </motion.div>
-            )}
 
             {success && (
                <motion.div 
