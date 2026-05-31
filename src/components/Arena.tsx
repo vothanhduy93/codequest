@@ -190,7 +190,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         window.onerror = function() { return true; };
         function __validate() {
           try {
-            const code = \`${debouncedCode.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+            const __userRawCode = decodeURIComponent("${encodeURIComponent(debouncedCode)}");
             ${activeChallenge.validationSnippet}
           } catch(e) {
             console.error(e);

@@ -14,7 +14,7 @@ const buildHTML = (data: any[]): Challenge[] => data.map(d => ({
   solutionExplanation: d.exp || 'Hoàn thành xuất sắc bộ cục HTML!',
   defaultCode: d.defCode || '<!-- Code ở đây -->\n',
   xpReward: 150 + (d.n * 10),
-  validationSnippet: `const code = document.body.innerHTML.toLowerCase(); ${d.val}`,
+  validationSnippet: `const code = (document.body.innerHTML + " " + (typeof __userRawCode !== 'undefined' ? __userRawCode : "")).toLowerCase(); ${d.val}`,
 }));
 
 const buildCSS = (data: any[]): Challenge[] => data.map(d => ({
