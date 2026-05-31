@@ -242,9 +242,12 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const validateCode = () => {
     playSound('click');
+    setErrorMsg('');
     const iframe = document.getElementById('preview-frame') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage('validate', '*');
+      setTimeout(() => {
+        iframe.contentWindow?.postMessage('validate', '*');
+      }, 10);
     }
   };
 

@@ -39,7 +39,7 @@ const buildCSS = (data: any[]): Challenge[] => data.map(d => {
     defaultCode: `<div class="target">Giao diện thử nghiệm</div>\n<style>\n  .target {\n    ${d.defCode || ''}\n  }\n</style>`,
     xpReward: 150 + (d.n * 10),
     validationSnippet: `
-      const userStyle = (document.querySelector('style')?.textContent || '').replace(/\\s+/g, '').toLowerCase();
+      const userStyle = (document.body.querySelector('style')?.textContent || '').replace(/\\s+/g, '').toLowerCase();
       const reqPairs = ${JSON.stringify(reqProps)}.map(s => s.replace(/\\s+/g, ''));
       const missing = reqPairs.some(pair => !userStyle.includes(pair));
       if (missing) return false;
@@ -63,7 +63,7 @@ const buildJS = (data: any[]): Challenge[] => data.map(d => ({
   solutionExplanation: d.exp || 'Logic rất sắc bén!',
   defaultCode: `<script>\n  ${d.defCode || '// Viết thuật toán vào đây'}\n</script>`,
   xpReward: 150 + (d.n * 10),
-  validationSnippet: `const code = (document.querySelector("script")?.textContent || "").replace(/\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\//g, ""); ${d.val}`,
+  validationSnippet: `const code = (document.body.querySelector("script")?.textContent || "").replace(/\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\//g, ""); ${d.val}`,
 }));
 
 
