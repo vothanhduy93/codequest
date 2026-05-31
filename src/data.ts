@@ -1,7 +1,15 @@
 import { Challenge, Badge } from './types';
 import { extraHtml, extraCss, extraJs } from './lessonsData';
 
-export const LEVEL_THRESHOLDS = [0, 500, 1200, 2500, 4500, 7000, 10000];
+const baseThresholds = [0, 500, 1200, 2500, 4500, 7000, 10000];
+export const LEVEL_THRESHOLDS = Array.from({ length: 100 }, (_, i) => {
+  if (i < baseThresholds.length) return baseThresholds[i];
+  let xp = 10000;
+  for (let j = 7; j <= i; j++) {
+    xp += 3000 + (j - 6) * 500;
+  }
+  return xp;
+});
 
 export const BADGES: Record<string, Badge> = {
   first_blood: {

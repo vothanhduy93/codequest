@@ -137,6 +137,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               needsUpdate = true;
             }
 
+            let correctLevel = 1;
+            for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+              if (updatedData.xp >= LEVEL_THRESHOLDS[i]) {
+                correctLevel = i + 1;
+                break;
+              }
+            }
+            if (updatedData.level !== correctLevel) {
+              updatedData.level = correctLevel;
+              needsUpdate = true;
+            }
+
             if (needsUpdate) {
                await setDoc(userRef, updatedData, { merge: true });
             }
