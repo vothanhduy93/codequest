@@ -9,22 +9,6 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.post('/api/generate-challenge', (req, res) => {
-    const randomId = Math.floor(Math.random() * 99999);
-    const px = Math.floor(Math.random() * 50) + 10;
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-    const pColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    res.json({
-      title: 'Thử thách Vô Hạn #' + randomId,
-      instructions: 'Sử dụng CSS, tạo class ".box-inf-' + randomId + '" có margin: ' + px + 'px và background-color: ' + pColor + '.',
-      type: 'css',
-      defaultCode: '<div class="box-inf-' + randomId + '"></div>\n<style>\n\n</style>',
-      validationSnippet: 'const el = document.querySelector(".box-inf-' + randomId + '"); if (!el) return false; const style = window.getComputedStyle(el); return style.margin === "' + px + 'px";',
-      xpReward: 20
-    });
-  });
-
   app.get('/api/leaderboard', (req, res) => {
     res.json([
       { id: '1', name: 'Nguyễn Văn A', xp: 4500, level: 9, avatar: 'NA' },

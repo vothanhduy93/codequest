@@ -1,55 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CHALLENGES } from '../data';
 import { useAppContext } from '../store';
-import { Lock, Star, Check, Bot, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { Lock, Star, Check, Bot, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { onSelectChallenge: (id: string) => void, onStartAIChallenge?: (challenge: any) => void }) {
   const { user } = useAppContext();
   
-  const [showAIModal, setShowAIModal] = useState(false);
-  const [aiTopic, setAiTopic] = useState('');
-  const [aiWeakness, setAiWeakness] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleGenerateAIChallenge = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsGenerating(true);
-    
-    try {
-      const response = await fetch('/api/generate-challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        alert(`Lỗi máy chủ (Vercel): Không thể nhận JSON. Nội dung: ${text.slice(0, 100)}...`);
-        setIsGenerating(false);
-        return;
-      }
-
-      if (response.ok && data && !data.error) {
-         data.id = `inf_${Date.now()}`;
-         data.kind = 'lesson';
-         data.difficulty = 'Trung bình';
-         if (onStartAIChallenge) onStartAIChallenge(data);
-         setShowAIModal(false);
-      } else {
-        alert(data.error || 'Có lỗi xảy ra');
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert(`Không thể kết nối đến máy chủ: ${e?.message}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const grouped = {
     html: CHALLENGES.filter(c => c.type === 'html'),
     css: CHALLENGES.filter(c => c.type === 'css'),
@@ -130,71 +88,6 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
         {renderList('css', 'Ảo thuật CSS', 'text-blue-400', isHtmlPassed)}
         {renderList('js', 'Ma thuật JS', 'text-yellow-400', isCssPassed)}
       </div>
-      
-      {/* Infinite Lesson Floating Button */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <button 
-          onClick={() => setShowAIModal(true)}
-          className="bg-indigo-500/80 hover:bg-indigo-500 text-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(99,102,241,0.5)] border border-indigo-400/50 backdrop-blur-sm transition-all hover:-translate-y-1 group flex items-center gap-3"
-        >
-          <Sparkles size={28} className="group-hover:rotate-12 transition-transform" />
-          <div className="text-left hidden md:block">
-            <div className="text-sm font-bold leading-tight">Bài Học Tự Động</div>
-            <div className="text-xs text-indigo-200">Không giới hạn</div>
-          </div>
-        </button>
-      </div>
-
-      {/* Infinite Modal */}
-      <AnimatePresence>
-        {showAIModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" 
-              onClick={() => !isGenerating && setShowAIModal(false)}
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-              className="relative w-full max-w-lg glass rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl z-10"
-            >
-              <div className="p-6 sm:p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 bg-indigo-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <Sparkles size={28} />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Thử Thách Vô Hạn</h2>
-                    <p className="text-indigo-200 text-sm">Tạo bài tập tự động, không giới hạn</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleGenerateAIChallenge} className="space-y-6">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-slate-300 text-sm">
-                    Luyện tập các thử thách cấu hình CSS liên tục hàng ngày để lên level. Hệ thống sẽ sinh bài tập ngẫu nhiên dựa theo thuật toán nội bộ thủ tục.
-                  </div>
-                  
-                  <button 
-                    type="submit"
-                    disabled={isGenerating}
-                    className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-500/50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-lg shadow-[0_0_20px_rgba(99,102,241,0.3)]"
-                  >
-                    {isGenerating ? (
-                      <><Loader2 className="animate-spin" size={24} /> Đang tạo bài học...</>
-                    ) : (
-                      'Tạo Đề Bài Ngay'
-                    )}
-                  </button>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
