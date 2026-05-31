@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Badge } from './types';
-import { LEVEL_THRESHOLDS, BADGES } from './data';
+import { LEVEL_THRESHOLDS, BADGES, CHALLENGES } from './data';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -149,6 +149,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               needsUpdate = true;
             }
 
+            if (updatedData.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
+              const allIds = CHALLENGES.map(c => c.id);
+              if (updatedData.completedChallenges.length !== allIds.length) {
+                updatedData.completedChallenges = allIds;
+                needsUpdate = true;
+              }
+            }
+
             if (needsUpdate) {
                await setDoc(userRef, updatedData, { merge: true });
             }
@@ -156,6 +164,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setUser(updatedData);
           } else {
             const newUser = defaultUser(authUser.uid, authUser.displayName || 'Học viên', authUser.photoURL);
+            
+            if (newUser.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
+              newUser.completedChallenges = CHALLENGES.map(c => c.id);
+            }
+
             await setDoc(userRef, newUser);
             setUser(newUser);
           }
