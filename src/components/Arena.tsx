@@ -500,11 +500,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                <motion.div 
                initial={{ opacity: 0, scale: 0.9 }} 
                animate={{ opacity: 1, scale: 1 }} 
-               className="absolute inset-0 bg-transparent pointer-events-none flex flex-col items-center justify-center z-50 p-4"
+               className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto flex flex-col items-center justify-center z-[100] p-4"
              >
-               <div className="bg-green-600/95 backdrop-blur-md shadow-2xl rounded-3xl p-8 flex flex-col items-center text-white pointer-events-auto border-4 border-green-400">
-                 <CheckCircle size={64} className="mb-4 text-green-200" />
-                 <h3 className="text-3xl font-bold mb-2">Tuyệt vời!</h3>
+               <div className="bg-green-600 shadow-[0_0_80px_rgba(34,197,94,0.4)] rounded-3xl p-10 flex flex-col items-center text-white pointer-events-auto border-4 border-green-400 min-w-[300px]">
+                 <CheckCircle size={80} className="mb-4 text-green-200" />
+                 <h3 className="text-4xl font-bold mb-2">Tuyệt vời!</h3>
                  {mode === 'time_attack' ? (
                    <>
                      <p className="text-xl font-bold text-yellow-300">🔥 +10 Giây</p>
@@ -512,7 +512,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                        initial={{ scale: 0.5, y: 20 }}
                        animate={{ scale: 1.5, y: 0 }}
                        transition={{ duration: 0.5, type: 'spring', bounce: 0.6 }}
-                       className="text-yellow-300 font-extrabold text-2xl mt-4 drop-shadow-md"
+                       className="text-yellow-300 font-extrabold text-3xl mt-4 drop-shadow-md"
                      >
                        + {xpGainedAmt > 0 ? xpGainedAmt : 0} KN
                      </motion.p>
@@ -530,13 +530,13 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                             + {xpGainedAmt} KN
                           </motion.p>
                         ) : (
-                          <p className="text-green-100/70 italic text-lg">(Thực hành lại - Không cộng thêm điểm)</p>
+                          <p className="text-green-100/90 italic text-lg">(Thực hành lại - Không cộng thêm điểm)</p>
                         )}
                       </div>
                      
                      <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                       <button onClick={() => { playSound('click'); handleNextChallenge(); }} className="py-3 px-8 bg-white hover:bg-slate-100 text-green-600 rounded-full font-black shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95">
-                         Tiếp tục <ChevronRight size={20} className="stroke-[3px]" />
+                       <button onClick={() => { playSound('click'); handleNextChallenge(); }} className="py-4 px-10 bg-white hover:bg-slate-100 text-green-700 rounded-full font-black text-xl shadow-2xl flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95">
+                         Tiếp tục <ChevronRight size={24} className="stroke-[4px]" />
                        </button>
                      </div>
                    </div>

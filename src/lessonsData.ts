@@ -17,21 +17,38 @@ const buildHTML = (data: any[]): Challenge[] => data.map(d => ({
   validationSnippet: `const code = document.body.innerHTML.replace(/<!--[\\s\\S]*?-->/g, "").toLowerCase(); ${d.val}`,
 }));
 
-const buildCSS = (data: any[]): Challenge[] => data.map(d => ({
-  id: `css_${d.n}`,
-  title: `Bài ${d.n}: ${d.title}`,
-  difficulty: d.n > 18 ? 'Khó' : 'Trung bình',
-  type: 'css',
-  kind: 'lesson',
-  description: d.desc,
-  instructions: d.ins,
-  hint: d.hint || 'Chú ý cú pháp thuộc tính ;',
-  solution: d.sol,
-  solutionExplanation: d.exp || 'Giao diện mượt mà hơn hẳn!',
-  defaultCode: `<div class="target">Giao diện thử nghiệm</div>\n<style>\n  .target {\n    ${d.defCode || ''}\n  }\n</style>`,
-  xpReward: 150 + (d.n * 10),
-  validationSnippet: `const el = document.querySelector('.target'); if(!el) return false; ${d.val}`,
-}));
+const buildCSS = (data: any[]): Challenge[] => data.map(d => {
+  const reqProps = d.sol
+    .replace(/^.*?\{/, '')
+    .replace(/\}.*$/, '')
+    .split(';')
+    .map((s: string) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  return {
+    id: `css_${d.n}`,
+    title: `Bài ${d.n}: ${d.title}`,
+    difficulty: d.n > 18 ? 'Khó' : 'Trung bình',
+    type: 'css',
+    kind: 'lesson',
+    description: d.desc,
+    instructions: d.ins,
+    hint: d.hint || 'Chú ý cú pháp thuộc tính ;',
+    solution: d.sol,
+    solutionExplanation: d.exp || 'Giao diện mượt mà hơn hẳn!',
+    defaultCode: `<div class="target">Giao diện thử nghiệm</div>\n<style>\n  .target {\n    ${d.defCode || ''}\n  }\n</style>`,
+    xpReward: 150 + (d.n * 10),
+    validationSnippet: `
+      const userStyle = (document.querySelector('style')?.textContent || '').replace(/\\s+/g, '').toLowerCase();
+      const reqPairs = ${JSON.stringify(reqProps)}.map(s => s.replace(/\\s+/g, ''));
+      const missing = reqPairs.some(pair => !userStyle.includes(pair));
+      if (missing) return false;
+      const el = document.querySelector('.target'); 
+      if(!el) return false; 
+      ${d.val}
+    `
+  };
+});
 
 const buildJS = (data: any[]): Challenge[] => data.map(d => ({
   id: `js_${d.n}`,
