@@ -9,6 +9,8 @@ import confetti from 'canvas-confetti';
 import { playSound } from '../lib/audio';
 import Markdown from 'react-markdown';
 
+import { createPortal } from 'react-dom';
+
 export default function Arena({ kind, mode = 'learn', initialChallengeId, customChallenge, onChallengeComplete }: { kind: 'lesson' | 'challenge', mode?: 'learn' | 'time_attack', initialChallengeId?: string, customChallenge?: any, onChallengeComplete?: () => void }) {
   const { user, completeChallenge, addXp } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -181,7 +183,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const srcDoc = `
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="en" translate="no">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -496,7 +498,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
               sandbox="allow-scripts allow-same-origin"
             />
 
-            {success && (
+            {success && createPortal((
                <motion.div 
                initial={{ opacity: 0, scale: 0.9 }} 
                animate={{ opacity: 1, scale: 1 }} 
@@ -543,7 +545,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                  )}
                </div>
              </motion.div>
-            )}
+            ), document.body)}
           </div>
         </div>
       </div>
