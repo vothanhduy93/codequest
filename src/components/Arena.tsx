@@ -41,6 +41,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const [showHint, setShowHint] = useState(false);
   const [success, setSuccess] = useState(false);
   const [xpGainedAmt, setXpGainedAmt] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string>('');
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
@@ -77,6 +78,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
       if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
       setDebouncedCode(combined);
+      setErrorMsg('');
     }, 400);
     return () => clearTimeout(timer);
   }, [htmlCode, cssCode, jsCode]);
@@ -117,12 +119,14 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
       setShowHint(false);
       setSuccess(false);
+      setErrorMsg('');
       setXpGainedAmt(0);
     }
   }, [activeChallengeId, activeChallenge]);
 
   const handleNextChallenge = () => {
     setSuccess(false);
+    setErrorMsg('');
     
     if (customChallenge && onChallengeComplete) {
       onChallengeComplete();
@@ -225,12 +229,13 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           }
         } else if (!event.data.success) {
           playSound('pop');
+          setErrorMsg('Oops! Đáp án chưa chính xác, hãy thử lại nhé.');
         }
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [success, activeChallenge.id, activeChallenge.title, activeChallenge.instructions, debouncedCode, activeChallenge.xpReward, completeChallenge, addXp, user.completedChallenges]);
+  }, [success, activeChallenge?.id, activeChallenge?.title, activeChallenge?.instructions, debouncedCode, activeChallenge?.xpReward, completeChallenge, addXp, user.completedChallenges]);
 
   const validateCode = () => {
     playSound('click');
@@ -473,6 +478,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
               >
                 <Play size={18} /> Chạy Code & Kiểm tra
               </button>
+              {errorMsg && (
+                <div className="mt-3 text-red-400 text-sm font-medium text-center animate-pulse">
+                  {errorMsg}
+                </div>
+              )}
             </div>
           </div>
 
