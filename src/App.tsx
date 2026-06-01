@@ -16,7 +16,9 @@ const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const BattleTab = lazy(() => import('./components/BattleTab'));
 const NotebookTab = lazy(() => import('./components/NotebookTab'));
 
-type Tab = 'dashboard' | 'learn' | 'time_attack' | 'leaderboard' | 'battle' | 'notebook';
+const AdminTab = lazy(() => import('./components/AdminTab'));
+
+type Tab = 'dashboard' | 'learn' | 'time_attack' | 'leaderboard' | 'battle' | 'notebook' | 'admin';
 
 function AppContent() {
   const { user, loading, signOut } = useAppContext();
@@ -41,6 +43,8 @@ function AppContent() {
     );
   }
 
+  const isAdmin = user.email === 'hcmc.duyvo@gmail.com' || user.name === 'Thanh Duy Võ';
+
   const tabs = [
     { id: 'dashboard', label: 'Tiến độ', icon: LayoutDashboard },
     { id: 'learn', label: 'Học tập', icon: BookOpen },
@@ -49,6 +53,10 @@ function AppContent() {
     { id: 'battle', label: 'Thách đấu 1vs1', icon: Swords },
     { id: 'leaderboard', label: 'Xếp hạng', icon: Trophy },
   ];
+
+  if (isAdmin) {
+    tabs.push({ id: 'admin', label: 'Quản lý bài học', icon: Code2 });
+  }
 
   return (
     <div className="h-screen text-slate-50 font-sans flex flex-col overflow-hidden">
@@ -183,6 +191,7 @@ function AppContent() {
                   {activeTab === 'time_attack' && <Arena kind="lesson" mode="time_attack" />}
                   {activeTab === 'battle' && <BattleTab />}
                   {activeTab === 'leaderboard' && <Leaderboard />}
+                  {activeTab === 'admin' && isAdmin && <AdminTab />}
                 </Suspense>
               </motion.div>
             </AnimatePresence>

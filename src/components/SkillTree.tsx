@@ -1,24 +1,28 @@
-import React from 'react';
-import { CHALLENGES } from '../data';
+import React, { useState } from 'react';
 import { useAppContext } from '../store';
-import { Lock, Star, Check, Bot, ChevronRight } from 'lucide-react';
+import { Lock, Star, Check, Bot, ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
 export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { onSelectChallenge: (id: string) => void, onStartAIChallenge?: (challenge: any) => void }) {
-  const { user } = useAppContext();
+  const { user, challenges } = useAppContext();
   
   const grouped = {
-    html: CHALLENGES.filter(c => c.type === 'html'),
-    css: CHALLENGES.filter(c => c.type === 'css'),
-    js: CHALLENGES.filter(c => c.type === 'js'),
+    html: challenges.filter(c => c.type === 'html'),
+    css: challenges.filter(c => c.type === 'css'),
+    js: challenges.filter(c => c.type === 'js'),
   };
 
-  const isHtmlPassed = user.completedChallenges.includes('html_40');
-  const isCssPassed = user.completedChallenges.includes('css_55');
+  const htmlChallenges = challenges.filter(c => c.type === 'html');
+  const cssChallenges = challenges.filter(c => c.type === 'css');
+  
+  const isHtmlPassed = htmlChallenges.length > 0 && user.completedChallenges.includes(htmlChallenges[htmlChallenges.length - 1].id);
+  const isCssPassed = cssChallenges.length > 0 && user.completedChallenges.includes(cssChallenges[cssChallenges.length - 1].id);
+
 
   const renderList = (categoryKey: 'html' | 'css' | 'js', title: string, colorClass: string, isUnlocked: boolean) => {
-    const challenges = grouped[categoryKey];
+    const sectionChallenges = grouped[categoryKey];
+    if (!sectionChallenges || sectionChallenges.length === 0) return null;
     
     return (
       <div className="mb-12">
@@ -27,10 +31,10 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
           {!isUnlocked && <Lock size={18} className="text-slate-500" />}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-l-2 border-slate-800/50 pl-4 py-2">
-          {challenges.map((challenge, index) => {
+          {sectionChallenges.map((challenge, index) => {
             const isCompleted = user.completedChallenges.includes(challenge.id);
-            const isLocked = !isUnlocked || (index > 0 && !user.completedChallenges.includes(challenges[index - 1].id));
-            const isCurrent = !isLocked && !isCompleted && (index === 0 || user.completedChallenges.includes(challenges[index - 1].id));
+            const isLocked = !isUnlocked || (index > 0 && !user.completedChallenges.includes(sectionChallenges[index - 1].id));
+            const isCurrent = !isLocked && !isCompleted && (index === 0 || user.completedChallenges.includes(sectionChallenges[index - 1].id));
 
             return (
               <button
@@ -78,9 +82,11 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
 
   return (
     <div className="w-full max-w-5xl mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-slate-50 font-sans">Lộ Trình Học Tập</h2>
-        <p className="text-slate-400 mt-2 text-sm max-w-xl">Hoàn thành các bài tập theo thứ tự để mở khóa các kỹ năng mới. Vượt qua thử thách HTML để mở khóa CSS, và hoàn thành CSS để vươn tới Javascript.</p>
+      <div className="mb-8 flex flex-col justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-50 font-sans">Lộ Trình Học Tập</h2>
+          <p className="text-slate-400 mt-2 text-sm max-w-xl">Hệ thống đang tự động lấy bài học từ cơ sở dữ liệu mới nhất.</p>
+        </div>
       </div>
       
       <div className="flex flex-col pb-24">

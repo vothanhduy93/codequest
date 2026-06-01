@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { updateDoc, doc } from 'firebase/firestore';
 import { useAppContext } from '../store';
-import { CHALLENGES } from '../data';
 import { playSound } from '../lib/audio';
 import Editor from '@monaco-editor/react';
 import { Play, CheckCircle, XCircle, Swords, ArrowLeft } from 'lucide-react';
@@ -12,7 +11,7 @@ import { formatName } from '../lib/nameUtils';
 import confetti from 'canvas-confetti';
 
 export default function BattleArena({ matchData, onLeave }: { matchData: any, onLeave: () => void }) {
-  const { user, resolvePvP } = useAppContext();
+  const { user, challenges, resolvePvP } = useAppContext();
   
   const [htmlCode, setHtmlCode] = useState('');
   const [cssCode, setCssCode] = useState('');
@@ -21,7 +20,7 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   const [activeEditorTab, setActiveEditorTab] = useState<'html' | 'css' | 'js'>('html');
   const [pvpResult, setPvpResult] = useState<'win' | 'lose' | null>(null);
 
-  const activeChallenge = CHALLENGES.find(c => c.id === matchData.challengeId);
+  const activeChallenge = challenges.find(c => c.id === matchData.challengeId);
   const isPlayer1 = matchData.player1.uid === user?.id;
   const me = isPlayer1 ? matchData.player1 : matchData.player2;
   const opponent = isPlayer1 ? matchData.player2 : matchData.player1;

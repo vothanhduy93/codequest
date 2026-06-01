@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Badge } from './types';
-import { LEVEL_THRESHOLDS, BADGES, CHALLENGES } from './data';
+import { User, Badge, Challenge } from './types';
+import { LEVEL_THRESHOLDS, BADGES, CHALLENGES as LOCAL_CHALLENGES } from './data';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 
 interface AppContextType {
   user: User | null;
   loading: boolean;
+  challenges: Challenge[];
   newEarnedBadges: Badge[];
   clearNewEarnedBadge: (badgeId: string) => void;
   levelUpData: number | null;
@@ -21,6 +22,7 @@ interface AppContextType {
   buyStreakFreeze: () => void;
   resetProgress: () => void;
   signOut: () => void;
+  updateChallenge: (id: string, partial: Partial<Challenge>) => void;
 }
 
 const defaultUser = (uid: string, name: string, photoURL: string | null): User => {
@@ -52,8 +54,45 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [challenges, setChallenges] = useState<Challenge[]>(LOCAL_CHALLENGES);
   const [newEarnedBadges, setNewEarnedBadges] = useState<Badge[]>([]);
   const [levelUpData, setLevelUpData] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadChallenges = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'challenges'));
+        let dbChallenges: Challenge[] = [];
+        querySnapshot.forEach((doc) => {
+          dbChallenges.push(doc.data() as Challenge);
+        });
+
+        if (dbChallenges.length < 230) {
+          // Sync from API if missing some lessons
+          const res = await fetch('/api/fcc-sync');
+          if (res.ok) {
+            const apiChallenges = await res.json();
+            if (Array.isArray(apiChallenges) && apiChallenges.length > 0) {
+              const cleanedApi = apiChallenges.map((c: any) => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
+              setChallenges([...LOCAL_CHALLENGES, ...cleanedApi]);
+              // Save to Firestore
+              for (const c of cleanedApi) {
+                try { await setDoc(doc(db, 'challenges', c.id), c); } catch (e) {}
+              }
+            }
+          }
+        } else {
+          // Sort by id assuming they follow fcc_1... or something similar
+          dbChallenges.sort((a, b) => a.id.localeCompare(b.id));
+          dbChallenges = dbChallenges.map(c => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
+          setChallenges([...LOCAL_CHALLENGES, ...dbChallenges]);
+        }
+      } catch (e) {
+        console.error('Failed to load challenges', e);
+      }
+    };
+    loadChallenges();
+  }, []);
 
   const clearNewEarnedBadge = (badgeId: string) => {
     setNewEarnedBadges(prev => prev.filter(b => b.id !== badgeId));
@@ -150,8 +189,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
 
             if (updatedData.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
-              const allIds = CHALLENGES.map(c => c.id);
-              if (updatedData.completedChallenges.length !== allIds.length) {
+              const allIds = LOCAL_CHALLENGES.map(c => c.id);
+              if (updatedData.completedChallenges.length !== allIds.length && allIds.length > 0) {
                 updatedData.completedChallenges = allIds;
                 needsUpdate = true;
               }
@@ -166,7 +205,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const newUser = defaultUser(authUser.uid, authUser.displayName || 'Học viên', authUser.photoURL);
             
             if (newUser.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
-              newUser.completedChallenges = CHALLENGES.map(c => c.id);
+              newUser.completedChallenges = LOCAL_CHALLENGES.map(c => c.id);
             }
 
             await setDoc(userRef, newUser);
@@ -413,8 +452,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     firebaseSignOut(auth);
   };
 
+  const updateChallenge = async (id: string, partial: Partial<Challenge>) => {
+    setChallenges(prev => prev.map(c => c.id === id ? { ...c, ...partial } : c));
+    try {
+      await setDoc(doc(db, 'challenges', id), partial, { merge: true });
+    } catch (e) {
+      console.error('Failed to update challenge remotely', e);
+    }
+  };
+
   return (
-    <AppContext.Provider value={{ user, loading, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, buyStreakFreeze, resetProgress, signOut }}>
+    <AppContext.Provider value={{ user, loading, challenges, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, buyStreakFreeze, resetProgress, signOut, updateChallenge }}>
       {children}
     </AppContext.Provider>
   );

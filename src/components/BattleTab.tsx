@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, limit, addDoc, updateDoc, doc, onSnapshot, serverTimestamp, orderBy } from 'firebase/firestore';
 import { useAppContext } from '../store';
-import { CHALLENGES } from '../data';
 import BattleArena from './BattleArena';
 import { Swords, Loader2, User as UserIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function BattleTab() {
-  const { user } = useAppContext();
+  const { user, challenges } = useAppContext();
   const [matchId, setMatchId] = useState<string | null>(null);
   const [matchData, setMatchData] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -53,7 +52,7 @@ export default function BattleTab() {
            return;
         }
 
-        const randomChallenge = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
+        const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
 
         await updateDoc(doc(db, 'matches', matchDoc.id), {
           status: 'playing',

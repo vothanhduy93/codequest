@@ -45,7 +45,6 @@ export interface Challenge {
   instructions: string;
   hint: string;
   solution?: string;
-  solutionExplanation?: string;
   defaultCode: string;
   xpReward: number;
   validationSnippet: string; // JavaScript code to validate the iframe content

@@ -59,5 +59,9 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
     }
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow create, update: if true;
+    }
   }
 }

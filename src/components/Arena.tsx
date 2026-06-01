@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
-import { CHALLENGES, getNextChallenge } from '../data';
 import { Play, CheckCircle, Lightbulb, Lock, BookmarkPlus, X, Bot, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -12,13 +11,13 @@ import Markdown from 'react-markdown';
 import { createPortal } from 'react-dom';
 
 export default function Arena({ kind, mode = 'learn', initialChallengeId, customChallenge, onChallengeComplete }: { kind: 'lesson' | 'challenge', mode?: 'learn' | 'time_attack', initialChallengeId?: string, customChallenge?: any, onChallengeComplete?: () => void }) {
-  const { user, completeChallenge, addXp } = useAppContext();
+  const { user, challenges, completeChallenge, addXp } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
-  const filteredChallenges = CHALLENGES.filter(c => c.kind === kind);
+  const filteredChallenges = challenges.filter(c => c.kind === kind);
   const [activeChallengeId, setActiveChallengeId] = useState<string>(initialChallengeId || filteredChallenges[0]?.id || '');
   
-  const activeChallenge = customChallenge || filteredChallenges.find(c => c.id === activeChallengeId);
+  const activeChallenge = customChallenge || filteredChallenges.find(c => c.id === activeChallengeId) || filteredChallenges[0];
   
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -47,6 +46,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (mode === 'time_attack' && isPlaying && !gameOver && !success) {
@@ -163,7 +163,49 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     return () => clearTimeout(timeout);
   }, [success, activeChallengeId, filteredChallenges, selectedCategory, mode]);
 
-  const { saveSnippet } = useAppContext();
+  const { saveSnippet, updateChallenge } = useAppContext();
+
+  const handleTranslate = async () => {
+    if (!activeChallenge || isTranslating) return;
+    setIsTranslating(true);
+    try {
+      const payload = {
+        title: activeChallenge.title,
+        description: activeChallenge.description,
+        instructions: activeChallenge.instructions,
+        hint: activeChallenge.hint || ''
+      };
+
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Lỗi từ server');
+      }
+
+      updateChallenge(activeChallenge.id, {
+        title: data.title || activeChallenge.title,
+        description: data.description || activeChallenge.description,
+        instructions: data.instructions || activeChallenge.instructions,
+        hint: data.hint || activeChallenge.hint,
+        translatedVi: true
+      });
+    } catch (e: any) {
+      console.error(e);
+      let errorMsg = 'Không thể dịch lúc này!';
+      if (e.message && e.message.includes('429')) {
+        errorMsg = 'Quá giới hạn dịch (Rate Limit), vui lòng thử lại sau 1 phút.';
+      }
+      alert(errorMsg);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleSaveSnippet = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +221,13 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     setShowSnippetModal(false);
   };
 
-  if (!activeChallenge) return null;
+  if (!activeChallenge) {
+    return (
+      <div className="flex bg-[#0f172a] h-full overflow-hidden items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-500 w-12 h-12" />
+      </div>
+    );
+  }
 
   const srcDoc = `
     <!DOCTYPE html>
@@ -243,6 +291,26 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const validateCode = () => {
     playSound('click');
     setErrorMsg('');
+
+    if (activeChallenge) {
+      const normalize = (s: string) => s.replace(/\s+/g, '').trim();
+      
+      // 1. Check if user hasn't modified default code
+      if (activeChallenge.defaultCode && normalize(debouncedCode) === normalize(activeChallenge.defaultCode)) {
+        setErrorMsg('Bạn chưa thay đổi code. Hãy thử làm bài nhé!');
+        return;
+      }
+
+      // 2. If validation is completely empty or just "return true;", use solution string matching as fallback
+      const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
+      if (!hasMeaningfulValidation && activeChallenge.solution) {
+         if (normalize(debouncedCode) !== normalize(activeChallenge.solution)) {
+            setErrorMsg('Code chưa chính xác theo đáp án mẫu. Vui lòng kiểm tra lại!');
+            return;
+         }
+      }
+    }
+
     const iframe = document.getElementById('preview-frame') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
       setTimeout(() => {
@@ -329,15 +397,35 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         <div className="glass p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-50">{activeChallenge.title}</h2>
-              <p className="text-slate-400 mt-1">{activeChallenge.description}</p>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-slate-50">{activeChallenge.title}</h2>
+                {mode === 'learn' && (
+                  <button 
+                    onClick={handleTranslate} 
+                    disabled={isTranslating}
+                    className="flex items-center gap-1 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 px-2 py-1 rounded-md text-xs font-bold font-sans transition-colors disabled:opacity-50"
+                  >
+                    {isTranslating ? <Loader2 size={12} className="animate-spin"/> : <Bot size={12}/>}
+                    {isTranslating ? 'Đang dịch...' : (activeChallenge.translatedVi ? 'Dịch lại' : 'Dịch tiếng Việt')}
+                  </button>
+                )}
+              </div>
+              <div className="text-slate-400 mt-2 text-sm leading-relaxed">
+                <pre className="whitespace-pre-wrap font-sans">
+                  <Markdown components={{ code: ({node, ...props}) => <code className="bg-black/30 px-1 rounded text-primary-300" {...props} /> }}>
+                    {activeChallenge.description}
+                  </Markdown>
+                </pre>
+              </div>
             </div>
-            <div className="bg-white/10 px-3 py-1 rounded-full text-sm text-teal-400 font-bold border border-white/10">
+            <div className="bg-white/10 px-3 py-1 rounded-full text-sm text-teal-400 font-bold border border-white/10 shrink-0">
               +{activeChallenge.xpReward} KN
             </div>
           </div>
           <div className="bg-blue-500/10 p-4 rounded-xl text-slate-300 text-sm border-l-4 border-blue-500">
-            <strong>Nhiệm vụ:</strong> {activeChallenge.instructions}
+            <pre className="whitespace-pre-wrap font-sans">
+              <strong>Nhiệm vụ:</strong> <Markdown components={{ p: ({node, ...props}) => <span {...props} />, code: ({node, ...props}) => <code className="bg-black/30 px-1 rounded text-primary-300" {...props} /> }}>{activeChallenge.instructions}</Markdown>
+            </pre>
           </div>
         </div>
 
@@ -394,11 +482,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                       >
                         <code>{activeChallenge.solution}</code>
                       </pre>
-                    </div>
-                  )}
-                  {activeChallenge.solutionExplanation && (
-                    <div className="text-slate-300 text-base leading-relaxed bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-                      <span className="font-bold text-blue-400">📝 Giải thích:</span> {activeChallenge.solutionExplanation}
                     </div>
                   )}
                 </motion.div>

@@ -1,10 +1,9 @@
 import React from 'react';
 import { useAppContext } from '../store';
-import { LEVEL_THRESHOLDS, CHALLENGES } from '../data';
+import { LEVEL_THRESHOLDS } from '../data';
 import { formatName } from '../lib/nameUtils';
 import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal, Crown } from 'lucide-react';
 import { motion } from 'motion/react';
-import { getNextChallenge } from '../data';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 const getBadgeIcon = (iconName: string) => {
@@ -32,13 +31,13 @@ const getBadgeColors = (id: string) => {
 };
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
-  const { user, resetProgress, claimQuest, buyStreakFreeze } = useAppContext();
+  const { user, resetProgress, claimQuest, buyStreakFreeze, challenges } = useAppContext();
 
   const currentLevelXp = LEVEL_THRESHOLDS[user.level - 1] || 0;
   const nextLevelXp = LEVEL_THRESHOLDS[user.level] || currentLevelXp + 1000;
   const progressPercent = Math.min(100, Math.max(0, ((user.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100));
 
-  const nextChallenge = getNextChallenge(user.completedChallenges, 'lesson');
+  const nextChallenge = challenges.find(c => c.kind === 'lesson' && !user.completedChallenges.includes(c.id));
 
   const htmlScore = user.completedChallenges.filter(id => id.startsWith('html')).length * 10;
   const cssScore = user.completedChallenges.filter(id => id.startsWith('css')).length * 10;

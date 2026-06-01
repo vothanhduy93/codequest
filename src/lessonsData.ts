@@ -11,7 +11,6 @@ const buildHTML = (data: any[]): Challenge[] => data.map(d => ({
   instructions: d.ins,
   hint: d.hint || 'Hãy xem kĩ yêu cầu nhé.',
   solution: d.sol,
-  solutionExplanation: d.exp || 'Hoàn thành xuất sắc bộ cục HTML!',
   defaultCode: d.defCode || '<!-- Code ở đây -->\n',
   xpReward: 150 + (d.n * 10),
   validationSnippet: `const code = document.body.innerHTML.replace(/<!--[\\s\\S]*?-->/g, "").toLowerCase(); ${d.val}`,
@@ -35,7 +34,6 @@ const buildCSS = (data: any[]): Challenge[] => data.map(d => {
     instructions: d.ins,
     hint: d.hint || 'Chú ý cú pháp thuộc tính ;',
     solution: d.sol,
-    solutionExplanation: d.exp || 'Giao diện mượt mà hơn hẳn!',
     defaultCode: `<div class="target">Giao diện thử nghiệm</div>\n<style>\n  .target {\n    ${d.defCode || ''}\n  }\n</style>`,
     xpReward: 150 + (d.n * 10),
     validationSnippet: `
@@ -60,7 +58,6 @@ const buildJS = (data: any[]): Challenge[] => data.map(d => ({
   instructions: d.ins,
   hint: d.hint || 'Code JS cần tính chính xác tuyệt đối.',
   solution: `<script>\n${d.sol}\n</script>`,
-  solutionExplanation: d.exp || 'Logic rất sắc bén!',
   defaultCode: `<script>\n  ${d.defCode || '// Viết thuật toán vào đây'}\n</script>`,
   xpReward: 150 + (d.n * 10),
   validationSnippet: `const code = (document.body.querySelector("script")?.textContent || "").replace(/\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\//g, ""); ${d.val}`,
