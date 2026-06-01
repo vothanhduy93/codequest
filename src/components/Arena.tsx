@@ -381,7 +381,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         </div>
 
         {/* Editor & Preview */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[300px]">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[500px] md:h-[600px]">
           <div className="glass flex flex-col overflow-hidden relative">
             <div className="bg-white/5 flex items-center border-b border-white/10">
               <div className="flex gap-1 p-2 flex-1">
