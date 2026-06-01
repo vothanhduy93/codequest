@@ -46,7 +46,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
-  const [isTranslating, setIsTranslating] = useState(false);
+
 
   useEffect(() => {
     if (mode === 'time_attack' && isPlaying && !gameOver && !success) {
@@ -165,47 +165,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const { saveSnippet, updateChallenge } = useAppContext();
 
-  const handleTranslate = async () => {
-    if (!activeChallenge || isTranslating) return;
-    setIsTranslating(true);
-    try {
-      const payload = {
-        title: activeChallenge.title,
-        description: activeChallenge.description,
-        instructions: activeChallenge.instructions,
-        hint: activeChallenge.hint || ''
-      };
 
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Lỗi từ server');
-      }
-
-      updateChallenge(activeChallenge.id, {
-        title: data.title || activeChallenge.title,
-        description: data.description || activeChallenge.description,
-        instructions: data.instructions || activeChallenge.instructions,
-        hint: data.hint || activeChallenge.hint,
-        translatedVi: true
-      });
-    } catch (e: any) {
-      console.error(e);
-      let errorMsg = 'Không thể dịch lúc này!';
-      if (e.message && e.message.includes('429')) {
-        errorMsg = 'Quá giới hạn dịch (Rate Limit), vui lòng thử lại sau 1 phút.';
-      }
-      alert(errorMsg);
-    } finally {
-      setIsTranslating(false);
-    }
-  };
 
   const handleSaveSnippet = (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,16 +359,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-bold text-slate-50">{activeChallenge.title}</h2>
-                {mode === 'learn' && (
-                  <button 
-                    onClick={handleTranslate} 
-                    disabled={isTranslating}
-                    className="flex items-center gap-1 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 px-2 py-1 rounded-md text-xs font-bold font-sans transition-colors disabled:opacity-50"
-                  >
-                    {isTranslating ? <Loader2 size={12} className="animate-spin"/> : <Bot size={12}/>}
-                    {isTranslating ? 'Đang dịch...' : (activeChallenge.translatedVi ? 'Dịch lại' : 'Dịch tiếng Việt')}
-                  </button>
-                )}
+                {/* Translation button removed */}
               </div>
               <div className="text-slate-400 mt-2 text-sm leading-relaxed">
                 <pre className="whitespace-pre-wrap font-sans">

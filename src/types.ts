@@ -9,6 +9,7 @@ export interface Snippet {
 export interface User {
   id: string;
   name: string;
+  email?: string;
   photoURL?: string;
   xp: number;
   level: number;

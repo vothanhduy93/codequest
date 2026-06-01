@@ -113,6 +113,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             let needsUpdate = false;
             let updatedData = { ...data };
 
+            if (updatedData.email === undefined && authUser.email) {
+              updatedData.email = authUser.email;
+              needsUpdate = true;
+            }
+
             // Initialize new fields
             if (updatedData.coins === undefined) {
               updatedData.coins = 0;
@@ -203,6 +208,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setUser(updatedData);
           } else {
             const newUser = defaultUser(authUser.uid, authUser.displayName || 'Học viên', authUser.photoURL);
+            if (authUser.email) {
+              newUser.email = authUser.email;
+            }
             
             if (newUser.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
               newUser.completedChallenges = LOCAL_CHALLENGES.map(c => c.id);
