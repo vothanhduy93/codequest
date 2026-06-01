@@ -77,6 +77,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   useEffect(() => {
     const timer = setTimeout(() => {
       let combined = htmlCode;
+      const version = Date.now().toString();
+      combined = combined
+        .replace(/href=(["'])style\.css(?:\?v=[^"']*)?\1/gi, `href="style.css?v=${version}"`)
+        .replace(/src=(["'])script\.js(?:\?v=[^"']*)?\1/gi, `src="script.js?v=${version}"`);
+
       if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
       if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
       setDebouncedCode(combined);
@@ -115,6 +120,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       
       // Compute combined code for debounce to reset immediately
       let combined = html;
+      const version = Date.now().toString();
+      combined = combined
+        .replace(/href=(["'])style\.css(?:\?v=[^"']*)?\1/gi, `href="style.css?v=${version}"`)
+        .replace(/src=(["'])script\.js(?:\?v=[^"']*)?\1/gi, `src="script.js?v=${version}"`);
+
       if (css.trim()) combined += `\n<style>\n${css}\n</style>`;
       if (js.trim()) combined += `\n<script>\n${js}\n</script>`;
       setDebouncedCode(combined);
@@ -253,6 +263,22 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     setErrorMsg('');
 
     if (activeChallenge) {
+      // Tự động cập nhật phiên bản của style.css và script.js trong HTML của học viên
+      const version = Date.now().toString();
+      let changed = false;
+      const updatedHtml = htmlCode
+        .replace(/href=(["'])style\.css(?:\?v=[^"']*)?\1/gi, () => {
+          changed = true;
+          return `href="style.css?v=${version}"`;
+        })
+        .replace(/src=(["'])script\.js(?:\?v=[^"']*)?\1/gi, () => {
+          changed = true;
+          return `src="script.js?v=${version}"`;
+        });
+      if (changed) {
+        setHtmlCode(updatedHtml);
+      }
+
       const normalize = (s: string) => s.replace(/\s+/g, '').trim();
       
       // 1. Check if user hasn't modified default code
@@ -291,10 +317,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   };
 
   return (
-    <div className={cn("grid gap-6 h-[calc(100vh-8rem)]", mode === 'time_attack' ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1")}>
+    <div className={cn("grid gap-6 min-h-[calc(100vh-8rem)] h-auto pb-12", mode === 'time_attack' ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1")}>
       {/* Sidebar chọn bài học / Time Attack Info */}
       {mode === 'time_attack' && (
-        <div className="glass p-4 overflow-y-auto flex flex-col gap-4">
+        <div className="glass p-4 overflow-y-auto flex flex-col gap-4 h-full">
           <>
             <h2 className="font-bold text-xl text-orange-400 flex items-center gap-2">
               <Play className="fill-orange-400"/> Thời Gian Sinh Tử
@@ -343,7 +369,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       )}
 
       {/* Main Workspace */}
-      <div className={cn("flex flex-col h-full min-h-0 gap-6 relative", mode === 'time_attack' ? "lg:col-span-3" : "col-span-1")}>
+      <div className={cn("flex flex-col h-auto gap-6 relative", mode === 'time_attack' ? "lg:col-span-3" : "col-span-1")}>
         {mode === 'time_attack' && (!isPlaying) && (
           <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center rounded-2xl border border-white/10">
             <div className="text-center">
@@ -381,7 +407,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         </div>
 
         {/* Editor & Preview */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[750px] md:h-[850px]">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[600px] h-[750px] md:h-[850px]">
           <div className="glass flex flex-col overflow-hidden relative">
             <div className="bg-white/5 flex items-center border-b border-white/10">
               <div className="flex gap-1 p-2 flex-1">
