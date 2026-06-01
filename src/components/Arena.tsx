@@ -372,43 +372,37 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                 )}
               </div>
             </div>
-            {showHint && mode !== 'time_attack' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/10 border-b border-white/10 p-4 text-sm mx-4 mt-2 rounded-xl flex flex-col gap-3 max-h-[300px] overflow-y-auto">
-                {activeChallenge.solution && (
-                  <div className="mt-2">
-                    <span className="font-bold text-teal-400">✅ Đáp án tham khảo:</span>
-                    <pre 
-                      className="p-3 bg-black/50 rounded-lg mt-1 text-slate-300 font-mono text-xs overflow-x-auto border border-white/5 select-none"
-                      onCopy={(e) => {
-                        e.preventDefault();
-                        alert('Không cho phép copy đáp án! Hãy tự gõ để luyện tập bạn nhé.');
-                      }}
-                    >
-                      <code>{activeChallenge.solution}</code>
-                    </pre>
-                  </div>
-                )}
-                {activeChallenge.solutionExplanation && (
-                  <div className="text-slate-300">
-                    <span className="font-bold text-blue-400">📝 Giải thích:</span> {activeChallenge.solutionExplanation}
-                  </div>
-                )}
-              </motion.div>
-            )}
             <div 
-              className="flex-1 w-full relative"
+              className="flex-1 w-full relative min-h-0"
               onPasteCapture={(e) => {
-                const pastedText = e.clipboardData.getData('text');
-                if (
-                  activeChallenge.solution && 
-                  pastedText.replace(/\s+/g, '') === activeChallenge.solution.replace(/\s+/g, '')
-                ) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  alert('Gian lận không tốt đâu! Hãy tự gõ đáp án thay vì copy lại nhé.');
-                }
+                e.preventDefault();
+                e.stopPropagation();
+                alert('Vui lòng tự gõ code để luyện tập, chức năng copy/paste đã bị vô hiệu hóa!');
               }}
             >
+              {showHint && mode !== 'time_attack' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[60] bg-slate-900/95 backdrop-blur-md p-6 text-sm flex flex-col gap-4 overflow-y-auto border-t border-white/10 shadow-2xl">
+                  {activeChallenge.solution && (
+                    <div className="mt-2">
+                      <span className="font-bold text-teal-400 text-base">✅ Đáp án tham khảo:</span>
+                      <pre 
+                        className="p-4 bg-black/50 rounded-xl mt-2 text-primary-300 font-mono text-sm overflow-x-auto border border-white/10 select-none shadow-inner"
+                        onCopy={(e) => {
+                          e.preventDefault();
+                          alert('Không cho phép copy đáp án! Hãy tự gõ để luyện tập bạn nhé.');
+                        }}
+                      >
+                        <code>{activeChallenge.solution}</code>
+                      </pre>
+                    </div>
+                  )}
+                  {activeChallenge.solutionExplanation && (
+                    <div className="text-slate-300 text-base leading-relaxed bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+                      <span className="font-bold text-blue-400">📝 Giải thích:</span> {activeChallenge.solutionExplanation}
+                    </div>
+                  )}
+                </motion.div>
+              )}
               <div className={cn("w-full h-full", activeEditorTab !== 'html' && "hidden")}>
                 <Editor
                   key={`${activeChallenge.id}-html`}
