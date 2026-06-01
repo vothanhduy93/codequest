@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import SkillTree from './SkillTree';
 import Arena from './Arena';
 import { ArrowLeft } from 'lucide-react';
+import { useAppContext } from '../store';
 
 export default function LearnTab() {
-  const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
+  const { selectedChallengeId, setSelectedChallengeId } = useAppContext();
   const [customAIChallenge, setCustomAIChallenge] = useState<any>(null);
 
   if (customAIChallenge) {

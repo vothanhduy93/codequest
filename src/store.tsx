@@ -23,6 +23,8 @@ interface AppContextType {
   resetProgress: () => void;
   signOut: () => void;
   updateChallenge: (id: string, partial: Partial<Challenge>) => void;
+  selectedChallengeId: string | null;
+  setSelectedChallengeId: (id: string | null) => void;
 }
 
 const defaultUser = (uid: string, name: string, photoURL: string | null): User => {
@@ -57,6 +59,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [challenges, setChallenges] = useState<Challenge[]>(LOCAL_CHALLENGES);
   const [newEarnedBadges, setNewEarnedBadges] = useState<Badge[]>([]);
   const [levelUpData, setLevelUpData] = useState<number | null>(null);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadChallenges = async () => {
@@ -470,7 +473,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AppContext.Provider value={{ user, loading, challenges, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, buyStreakFreeze, resetProgress, signOut, updateChallenge }}>
+    <AppContext.Provider value={{ user, loading, challenges, newEarnedBadges, clearNewEarnedBadge, levelUpData, clearLevelUp, addXp, completeChallenge, claimQuest, resolvePvP, saveSnippet, deleteSnippet, buyStreakFreeze, resetProgress, signOut, updateChallenge, selectedChallengeId, setSelectedChallengeId }}>
       {children}
     </AppContext.Provider>
   );

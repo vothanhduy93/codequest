@@ -384,7 +384,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-slate-50">{activeChallenge.title}</h2>
+                <h2 className="text-2xl font-bold text-slate-50">
+                  <Markdown components={{ p: ({node, ...props}) => <span {...props} />, code: ({node, ...props}) => <code className="bg-black/30 px-1 py-0.5 rounded text-teal-300 font-mono text-lg" {...props} /> }}>
+                    {activeChallenge.title}
+                  </Markdown>
+                </h2>
                 {/* Translation button removed */}
               </div>
               <div className="text-slate-400 mt-2 text-sm leading-relaxed">

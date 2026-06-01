@@ -2,9 +2,11 @@ import React from 'react';
 import { useAppContext } from '../store';
 import { LEVEL_THRESHOLDS } from '../data';
 import { formatName } from '../lib/nameUtils';
-import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal, Crown } from 'lucide-react';
+import { Trophy, Star, ShieldAlert, Zap, Flame, User, Layout, Palette, Code, Award, Sparkles, Medal, Crown, Search, CheckCircle2, Circle, X, BookOpen, Filter } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { cn } from '../lib/utils';
+import Markdown from 'react-markdown';
 
 const getBadgeIcon = (iconName: string) => {
   switch (iconName) {
@@ -31,11 +33,62 @@ const getBadgeColors = (id: string) => {
 };
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
-  const { user, resetProgress, claimQuest, buyStreakFreeze, challenges } = useAppContext();
+  const { user, resetProgress, claimQuest, buyStreakFreeze, challenges, setSelectedChallengeId } = useAppContext();
+
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [subjectFilter, setSubjectFilter] = React.useState<'all' | 'html' | 'css' | 'js'>('all');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'todo' | 'done'>('all');
+  const [showMoreLimit, setShowMoreLimit] = React.useState(8);
 
   const currentLevelXp = LEVEL_THRESHOLDS[user.level - 1] || 0;
   const nextLevelXp = LEVEL_THRESHOLDS[user.level] || currentLevelXp + 1000;
   const progressPercent = Math.min(100, Math.max(0, ((user.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100));
+
+  const removeVietnameseTones = (str: string) => {
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+    str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+    str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+    str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+    str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+    str = str.replace(/Ỳ|Ý|Ỹ|Ỷ|Ỹ/g, "Y");
+    str = str.replace(/Đ/g, "D");
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  };
+
+  const lessonChallenges = challenges.filter(c => c.kind === 'lesson');
+
+  const filteredLessons = React.useMemo(() => {
+    return lessonChallenges.filter(lesson => {
+      // 1. Term Match
+      if (searchTerm.trim() !== '') {
+        const cleanTerm = removeVietnameseTones(searchTerm);
+        const cleanTitle = removeVietnameseTones(lesson.title || '');
+        const cleanDesc = removeVietnameseTones(lesson.description || '');
+        if (!cleanTitle.includes(cleanTerm) && !cleanDesc.includes(cleanTerm)) {
+          return false;
+        }
+      }
+
+      // 2. Subject Filter
+      if (subjectFilter !== 'all' && lesson.type !== subjectFilter) {
+        return false;
+      }
+
+      // 3. Status Filter
+      const isCompleted = user.completedChallenges.includes(lesson.id);
+      if (statusFilter === 'todo' && isCompleted) return false;
+      if (statusFilter === 'done' && !isCompleted) return false;
+
+      return true;
+    });
+  }, [searchTerm, subjectFilter, statusFilter, challenges, user.completedChallenges]);
 
   const nextChallenge = challenges.find(c => c.kind === 'lesson' && !user.completedChallenges.includes(c.id));
 
@@ -65,7 +118,11 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                <div>
                   <h3 className="text-teal-400 font-bold flex items-center gap-2 mb-1"><Zap size={20} /> Bài học gợi ý tiếp theo</h3>
-                  <p className="text-slate-50 text-xl font-bold">{nextChallenge.title}</p>
+                  <div className="text-slate-50 text-xl font-bold">
+                    <Markdown components={{ p: ({node, ...props}) => <span {...props} />, code: ({node, ...props}) => <code className="bg-black/30 px-1 py-0.5 rounded text-teal-300 font-mono text-base" {...props} /> }}>
+                      {nextChallenge.title}
+                    </Markdown>
+                  </div>
                   <p className="text-slate-400 text-sm mt-1">{nextChallenge.description}</p>
                </div>
                <button 
@@ -77,6 +134,238 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
              </div>
           </motion.div>
         )}
+
+        {/* Tìm kiếm bài học nhanh */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="md:col-span-2 glass p-6 border-white/10"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-50 flex items-center gap-2">
+                <Search className="text-teal-400 w-5 h-5 animate-pulse" /> Tìm kiếm bài tập & bài học nhanh
+              </h2>
+              <p className="text-slate-400 text-sm mt-0.5">Tìm kiếm nhanh bài học HTML, CSS, JS và luyện tập tức thì</p>
+            </div>
+            <span className="text-xs bg-teal-400/10 text-teal-300 font-mono px-2.5 py-1 rounded-full border border-teal-400/20 self-start lg:self-center">
+              Tổng số: {lessonChallenges.length} bài học
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {/* Input Bar */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Nhập từ khóa bài tập cần tìm... (Ví dụ: header, button, div, flexbox, Doctype...)"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowMoreLimit(8);
+                }}
+                className="w-full bg-white/5 hover:bg-white/10 focus:bg-slate-900/40 border border-white/10 focus:border-teal-400/50 rounded-xl px-4 py-3.5 pl-12 pr-11 text-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400/20 transition-all font-medium text-sm md:text-base shadow-inner"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-50 p-1 rounded-full hover:bg-white/10 transition-colors"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter chips rows */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4 pt-1 border-t border-white/5">
+              {/* Language Filters */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Ngôn ngữ:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['all', 'html', 'css', 'js'] as const).map(sub => (
+                    <button
+                      key={sub}
+                      onClick={() => {
+                        setSubjectFilter(sub);
+                        setShowMoreLimit(8);
+                      }}
+                      className={cn(
+                        "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all duration-200 capitalize",
+                        subjectFilter === sub
+                          ? "bg-teal-400/20 text-teal-400 border-teal-400/40 font-semibold"
+                          : "bg-white/5 text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/10"
+                      )}
+                    >
+                      {sub === 'all' ? 'Tất cả' : sub.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vertical divider */}
+              <div className="hidden md:block w-px h-5 bg-white/10" />
+
+              {/* Status Filters */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Trạng thái:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'all', label: 'Tất cả' },
+                    { id: 'todo', label: 'Chưa học' },
+                    { id: 'done', label: 'Đã hoàn thành' }
+                  ].map(stat => (
+                    <button
+                      key={stat.id}
+                      onClick={() => {
+                        setStatusFilter(stat.id as any);
+                        setShowMoreLimit(8);
+                      }}
+                      className={cn(
+                        "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all duration-200",
+                        statusFilter === stat.id
+                          ? "bg-purple-400/20 text-purple-400 border-purple-400/40 font-semibold"
+                          : "bg-white/5 text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/10"
+                      )}
+                    >
+                      {stat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Block */}
+          <div className="mt-4 pt-4 border-t border-white/5">
+            {filteredLessons.length > 0 ? (
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-semibold text-slate-400">
+                    {searchTerm || subjectFilter !== 'all' || statusFilter !== 'all' 
+                      ? `Tìm thấy ${filteredLessons.length} bài học:` 
+                      : "Gợi ý lộ trình tiếp theo của bạn:"}
+                  </span>
+                  {filteredLessons.length > showMoreLimit && (
+                    <span className="text-xs text-teal-400/80">
+                      Hiển thị {showMoreLimit} / {filteredLessons.length} bài
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredLessons.slice(0, showMoreLimit).map((lesson) => {
+                    const isCompleted = user.completedChallenges.includes(lesson.id);
+                    const isHTML = lesson.type === 'html';
+                    const isCSS = lesson.type === 'css';
+                    
+                    return (
+                      <motion.div
+                        key={lesson.id}
+                        onClick={() => {
+                          setSelectedChallengeId(lesson.id);
+                          onNavigate?.('learn');
+                        }}
+                        whileHover={{ y: -2 }}
+                        className="bg-white/5 hover:bg-teal-400/10 border border-white/10 hover:border-teal-400/30 p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-300 shadow-md group"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden pr-2">
+                          {/* Type Tag */}
+                          <div className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center font-bold font-mono text-xs shrink-0 border",
+                            isHTML 
+                              ? "bg-orange-500/10 text-orange-400 border-orange-500/20 group-hover:bg-orange-500/20" 
+                              : isCSS 
+                                ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20 group-hover:bg-cyan-500/20" 
+                                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 group-hover:bg-yellow-500/20"
+                          )}>
+                            {lesson.type.toUpperCase()}
+                          </div>
+                          
+                          {/* Title / Description */}
+                          <div className="overflow-hidden">
+                            <h4 className="font-bold text-slate-100 group-hover:text-teal-400 transition-colors text-sm md:text-base truncate">
+                              <Markdown components={{ p: ({node, ...props}) => <span {...props} />, code: ({node, ...props}) => <code className="bg-black/30 px-1 py-0.5 rounded text-teal-300 font-mono text-xs" {...props} /> }}>
+                                {lesson.title}
+                              </Markdown>
+                            </h4>
+                            <p className="text-slate-400 text-xs truncate mt-0.5">
+                              {lesson.description || 'Chinh phục bài học này để lấy thêm kinh nghiệm!'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right Stats */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="hidden sm:flex flex-col items-end gap-1 font-mono text-right">
+                            <span className={cn(
+                              "text-[8px] md:text-[9px] uppercase font-bold px-2 py-0.5 rounded-full border",
+                              lesson.difficulty === 'Khó' 
+                                ? "text-red-400 bg-red-400/10 border-red-400/20" 
+                                : lesson.difficulty === 'Trung bình' 
+                                  ? "text-orange-400 bg-orange-400/10 border-orange-400/20" 
+                                  : "text-green-400 bg-green-400/10 border-green-400/20"
+                            )}>
+                              {lesson.difficulty || 'Dễ'}
+                            </span>
+                            <span className="text-[10px] text-teal-400">+{lesson.xpReward || 100} XP</span>
+                          </div>
+
+                          {/* Completed Checklist */}
+                          <div>
+                            {isCompleted ? (
+                              <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center border border-emerald-500/40" title="Đã hoàn thành">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-white/5 group-hover:bg-teal-400/20 flex items-center justify-center border border-white/10 group-hover:border-teal-400/40 transition-all" title="Chưa hoàn thành">
+                                <Circle className="w-5 h-5 text-slate-500 group-hover:text-teal-400 transition-colors" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Show more button */}
+                {filteredLessons.length > showMoreLimit && (
+                  <div className="text-center mt-4">
+                    <button
+                      onClick={() => setShowMoreLimit(prev => prev + 12)}
+                      className="px-5 py-2 hover:bg-teal-400/15 hover:text-teal-400 border border-white/10 hover:border-teal-400/40 text-slate-300 font-bold rounded-xl text-xs sm:text-sm transition-all shadow-md active:scale-95"
+                    >
+                      Xem thêm {filteredLessons.length - showMoreLimit} bài tập khác
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                <span className="text-3xl">🧩</span>
+                <p className="text-slate-200 font-bold text-lg mt-3">Không tìm thấy bài học phù hợp</p>
+                <p className="text-slate-400 text-sm max-w-sm mt-1">
+                  Hãy thử gõ từ khóa khác hoặc thiết lập lại bộ lọc để tìm được nhiều bài tập hơn.
+                </p>
+                {(searchTerm || subjectFilter !== 'all' || statusFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSubjectFilter('all');
+                      setStatusFilter('all');
+                      setShowMoreLimit(8);
+                    }}
+                    className="mt-4 text-xs font-semibold px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-slate-100 rounded-lg border border-white/10 transition-colors"
+                  >
+                    Xóa bộ lọc tìm kiếm
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
 
         {/* Chuỗi ngày học tập (Streak) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-1 glass p-6 bg-orange-400/10 border-orange-400/30 flex flex-col justify-between">
