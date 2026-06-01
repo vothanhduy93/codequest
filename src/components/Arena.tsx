@@ -480,13 +480,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
-                    quickSuggestions: { other: true, comments: true, strings: true },
-                    suggestOnTriggerCharacters: true,
-                    acceptSuggestionOnEnter: "on",
-                    tabCompletion: "on",
-                    autoClosingBrackets: "always",
-                    autoClosingQuotes: "always",
-                    snippetSuggestions: "top"
+                    quickSuggestions: false,
+                    suggestOnTriggerCharacters: false,
+                    acceptSuggestionOnEnter: "off",
+                    tabCompletion: "off",
+                    wordBasedSuggestions: "off",
+                    snippetSuggestions: "none",
+                    inlineSuggest: { enabled: false },
+                    parameterHints: { enabled: false },
+                    autoClosingBrackets: "never",
+                    autoClosingQuotes: "never"
                   }}
                 />
               </div>
@@ -507,6 +510,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
+                    quickSuggestions: false,
+                    suggestOnTriggerCharacters: false,
+                    acceptSuggestionOnEnter: "off",
+                    tabCompletion: "off",
+                    wordBasedSuggestions: "off",
+                    snippetSuggestions: "none",
+                    inlineSuggest: { enabled: false },
+                    parameterHints: { enabled: false },
+                    autoClosingBrackets: "never",
+                    autoClosingQuotes: "never"
                   }}
                 />
               </div>
@@ -527,6 +540,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
+                    quickSuggestions: false,
+                    suggestOnTriggerCharacters: false,
+                    acceptSuggestionOnEnter: "off",
+                    tabCompletion: "off",
+                    wordBasedSuggestions: "off",
+                    snippetSuggestions: "none",
+                    inlineSuggest: { enabled: false },
+                    parameterHints: { enabled: false },
+                    autoClosingBrackets: "never",
+                    autoClosingQuotes: "never"
                   }}
                 />
               </div>

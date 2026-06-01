@@ -319,13 +319,79 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
 
           <div className="flex-1 relative">
             <div className={cn("w-full h-full", activeEditorTab !== 'html' && "hidden")}>
-              <Editor path="\pvp.html" height="100%" language="html" theme="vs-dark" onChange={(v) => setHtmlCode(v || '')} value={htmlCode} onMount={handleEditorMount} options={{ minimap: { enabled: false }, fontSize: 14 }} />
+              <Editor 
+                path="\pvp.html" 
+                height="100%" 
+                language="html" 
+                theme="vs-dark" 
+                onChange={(v) => setHtmlCode(v || '')} 
+                value={htmlCode} 
+                onMount={handleEditorMount} 
+                options={{ 
+                  minimap: { enabled: false }, 
+                  fontSize: 14,
+                  quickSuggestions: false,
+                  suggestOnTriggerCharacters: false,
+                  acceptSuggestionOnEnter: "off",
+                  tabCompletion: "off",
+                  wordBasedSuggestions: "off",
+                  snippetSuggestions: "none",
+                  inlineSuggest: { enabled: false },
+                  parameterHints: { enabled: false },
+                  autoClosingBrackets: "never",
+                  autoClosingQuotes: "never"
+                }} 
+              />
             </div>
             <div className={cn("w-full h-full", activeEditorTab !== 'css' && "hidden")}>
-               <Editor path="\pvp.css" height="100%" language="css" theme="vs-dark" onChange={(v) => setCssCode(v || '')} value={cssCode} onMount={handleEditorMount} options={{ minimap: { enabled: false }, fontSize: 14 }} />
+               <Editor 
+                path="\pvp.css" 
+                height="100%" 
+                language="css" 
+                theme="vs-dark" 
+                onChange={(v) => setCssCode(v || '')} 
+                value={cssCode} 
+                onMount={handleEditorMount} 
+                options={{ 
+                  minimap: { enabled: false }, 
+                  fontSize: 14,
+                  quickSuggestions: false,
+                  suggestOnTriggerCharacters: false,
+                  acceptSuggestionOnEnter: "off",
+                  tabCompletion: "off",
+                  wordBasedSuggestions: "off",
+                  snippetSuggestions: "none",
+                  inlineSuggest: { enabled: false },
+                  parameterHints: { enabled: false },
+                  autoClosingBrackets: "never",
+                  autoClosingQuotes: "never"
+                }} 
+              />
             </div>
             <div className={cn("w-full h-full", activeEditorTab !== 'js' && "hidden")}>
-               <Editor path="\pvp.js" height="100%" language="javascript" theme="vs-dark" onChange={(v) => setJsCode(v || '')} value={jsCode} onMount={handleEditorMount} options={{ minimap: { enabled: false }, fontSize: 14 }} />
+               <Editor 
+                path="\pvp.js" 
+                height="100%" 
+                language="javascript" 
+                theme="vs-dark" 
+                onChange={(v) => setJsCode(v || '')} 
+                value={jsCode} 
+                onMount={handleEditorMount} 
+                options={{ 
+                  minimap: { enabled: false }, 
+                  fontSize: 14,
+                  quickSuggestions: false,
+                  suggestOnTriggerCharacters: false,
+                  acceptSuggestionOnEnter: "off",
+                  tabCompletion: "off",
+                  wordBasedSuggestions: "off",
+                  snippetSuggestions: "none",
+                  inlineSuggest: { enabled: false },
+                  parameterHints: { enabled: false },
+                  autoClosingBrackets: "never",
+                  autoClosingQuotes: "never"
+                }} 
+              />
             </div>
           </div>
           
