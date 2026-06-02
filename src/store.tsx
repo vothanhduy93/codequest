@@ -53,6 +53,34 @@ const defaultUser = (uid: string, name: string, photoURL: string | null): User =
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const healChallenges = (list: Challenge[]): Challenge[] => {
+  return list.map(c => {
+    // If it's the Doctype challenge and the default code is empty or placeholder
+    if ((c.title?.toLowerCase().includes('doctype') || c.id === 'fcc_1000') && (!c.defaultCode || !c.defaultCode.trim() || c.defaultCode === '<!-- Code ở đây -->\n')) {
+      return {
+        ...c,
+        defaultCode: '<h1>Hello World</h1>'
+      };
+    }
+    
+    // Fallback: if any HTML challenge has no default code, give it a placeholder comment or content
+    if (!c.defaultCode || !c.defaultCode.trim()) {
+      if (c.type === 'html') {
+         let starter = '<!-- Code ở đây -->\n';
+         if (c.solution && c.solution.includes('<h1>')) {
+            starter = '<h1>Hello World</h1>';
+         }
+         return { ...c, defaultCode: starter };
+      } else if (c.type === 'css') {
+         return { ...c, defaultCode: '/* Viết CSS ở đây */\n' };
+      } else if (c.type === 'js') {
+         return { ...c, defaultCode: '// Viết Code JavaScript ở đây\n' };
+      }
+    }
+    return c;
+  });
+};
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +105,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const apiChallenges = await res.json();
             if (Array.isArray(apiChallenges) && apiChallenges.length > 0) {
               const cleanedApi = apiChallenges.map((c: any) => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
-              setChallenges([...LOCAL_CHALLENGES, ...cleanedApi]);
+              setChallenges(healChallenges([...LOCAL_CHALLENGES, ...cleanedApi]));
               // Save to Firestore
               for (const c of cleanedApi) {
                 try { await setDoc(doc(db, 'challenges', c.id), c); } catch (e) {}
@@ -88,7 +116,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           // Sort by id assuming they follow fcc_1... or something similar
           dbChallenges.sort((a, b) => a.id.localeCompare(b.id));
           dbChallenges = dbChallenges.map(c => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
-          setChallenges([...LOCAL_CHALLENGES, ...dbChallenges]);
+          setChallenges(healChallenges([...LOCAL_CHALLENGES, ...dbChallenges]));
         }
       } catch (e) {
         console.error('Failed to load challenges', e);

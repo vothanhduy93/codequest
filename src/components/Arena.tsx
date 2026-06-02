@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import confetti from 'canvas-confetti';
 import { playSound } from '../lib/audio';
+import { customFormat } from '../lib/formatter';
 import Markdown from 'react-markdown';
 
 import { createPortal } from 'react-dom';
@@ -37,6 +38,50 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const [cssCode, setCssCode] = useState<string>('');
   const [jsCode, setJsCode] = useState<string>('');
   const [activeEditorTab, setActiveEditorTab] = useState<'html' | 'css' | 'js'>('html');
+
+  const htmlEditorRef = React.useRef<any>(null);
+  const cssEditorRef = React.useRef<any>(null);
+  const jsEditorRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const clickedInsideEditor = target.closest('.monaco-editor') || target.closest('.monaco-editor-background');
+      
+      if (!clickedInsideEditor) {
+        if (activeEditorTab === 'html' && htmlEditorRef.current) {
+          const currentValue = htmlEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'html');
+          if (formattedValue !== currentValue) {
+            const position = htmlEditorRef.current.getPosition();
+            htmlEditorRef.current.setValue(formattedValue);
+            if (position) htmlEditorRef.current.setPosition(position);
+          }
+        } else if (activeEditorTab === 'css' && cssEditorRef.current) {
+          const currentValue = cssEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'css');
+          if (formattedValue !== currentValue) {
+            const position = cssEditorRef.current.getPosition();
+            cssEditorRef.current.setValue(formattedValue);
+            if (position) cssEditorRef.current.setPosition(position);
+          }
+        } else if (activeEditorTab === 'js' && jsEditorRef.current) {
+          const currentValue = jsEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'js');
+          if (formattedValue !== currentValue) {
+            const position = jsEditorRef.current.getPosition();
+            jsEditorRef.current.setValue(formattedValue);
+            if (position) jsEditorRef.current.setPosition(position);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleGlobalClick);
+    return () => {
+      document.removeEventListener('mousedown', handleGlobalClick);
+    };
+  }, [activeEditorTab]);
 
   const [debouncedCode, setDebouncedCode] = useState<string>('');
   const [showHint, setShowHint] = useState(false);
@@ -280,9 +325,17 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       }
 
       const normalize = (s: string) => s.replace(/\s+/g, '').trim();
+      const normalizeClean = (s: string) => {
+        if (!s) return '';
+        return s.toLowerCase()
+          .replace(/\s+/g, '')
+          .replace(/['"`]/g, '')
+          .replace(/;\s*$/g, '')
+          .trim();
+      };
       
       // 1. Check if user hasn't modified default code
-      if (activeChallenge.defaultCode && normalize(debouncedCode) === normalize(activeChallenge.defaultCode)) {
+      if (activeChallenge.defaultCode && normalizeClean(debouncedCode) === normalizeClean(activeChallenge.defaultCode)) {
         setErrorMsg('Bạn chưa thay đổi code. Hãy thử làm bài nhé!');
         return;
       }
@@ -290,8 +343,40 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       // 2. If validation is completely empty or just "return true;", use solution string matching as fallback
       const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
       if (!hasMeaningfulValidation && activeChallenge.solution) {
-         if (normalize(debouncedCode) !== normalize(activeChallenge.solution)) {
-            setErrorMsg('Code chưa chính xác theo đáp án mẫu. Vui lòng kiểm tra lại!');
+         if (normalizeClean(debouncedCode) !== normalizeClean(activeChallenge.solution)) {
+            // Chạy phân tích lỗi thông minh (Diagnostic)
+            let diagnostic = '';
+            
+            const hasDoctype = /<!doctype\s+html>/i.test(debouncedCode);
+            const expectDoctype = /<!doctype\s+html>/i.test(activeChallenge.solution);
+            
+            if (expectDoctype && !hasDoctype) {
+              diagnostic = 'Bạn chưa khai báo loại tài liệu `<!DOCTYPE html>` ở dòng đầu tiên của tài liệu.';
+            } else {
+              const openHtml = /<html[^>]*>/i.test(debouncedCode);
+              const closeHtml = /<\/html>/i.test(debouncedCode);
+              
+              if (closeHtml && !openHtml) {
+                diagnostic = 'Bạn có thẻ đóng `</html>` ở cuối nhưng đang THIẾU thẻ mở `<html>` nằm ngay sau khai báo Doctype!';
+              } else if (openHtml && !closeHtml) {
+                diagnostic = 'Bạn có thẻ mở `<html>` nhưng đang THIẾU thẻ đóng `</html>` ở cuối tài liệu!';
+              } else if (!openHtml && !closeHtml && /html/i.test(activeChallenge.solution)) {
+                diagnostic = 'Bạn cần bao bọc toàn bộ mã tiêu đề (<h1>...) bên trong cặp thẻ mở `<html>` và đóng `</html>`.';
+              } else {
+                const hasH1 = /<h1[^>]*>[\s\S]*?<\/h1>/i.test(debouncedCode);
+                const expectH1 = /<h1[^>]*>[\s\S]*?<\/h1>/i.test(activeChallenge.solution);
+                
+                if (expectH1 && !hasH1) {
+                  diagnostic = 'Bạn chưa tạo thẻ heading `<h1>` hoặc chưa viết đúng cấu trúc tiêu đề `<h1>đáp án</h1>`.';
+                }
+              }
+            }
+            
+            if (diagnostic) {
+              setErrorMsg(`Code chưa chính xác: ${diagnostic}`);
+            } else {
+              setErrorMsg('Code chưa chính xác theo đáp án mẫu. Gợi ý: Hãy viết theo cấu trúc:\n<!DOCTYPE html>\n<html>\n  <h1>Nội dung</h1>\n</html>');
+            }
             return;
          }
       }
@@ -310,9 +395,32 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     emmetHTML(monaco);
     emmetCSS(monaco);
 
-    // Auto-format on blur
+    const performMyFormat = () => {
+      const currentValue = editor.getValue();
+      const uri = editor.getModel()?.uri?.toString() || '';
+      let type: 'html' | 'css' | 'js' = 'html';
+      if (uri.endsWith('.css')) type = 'css';
+      else if (uri.endsWith('.js') || uri.endsWith('.javascript')) type = 'js';
+      
+      const formattedValue = customFormat(currentValue, type);
+      if (formattedValue !== currentValue) {
+        const position = editor.getPosition();
+        editor.setValue(formattedValue);
+        if (position) {
+          editor.setPosition(position);
+        }
+      }
+    };
+
+    // Auto-format on focus change (blur events) representing editor blur state transitions
     editor.onDidBlurEditorText(() => {
       editor.getAction('editor.action.formatDocument')?.run();
+      performMyFormat();
+    });
+
+    editor.onDidBlurEditorWidget(() => {
+      editor.getAction('editor.action.formatDocument')?.run();
+      performMyFormat();
     });
   };
 
@@ -430,7 +538,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                   </button>
                 ))}
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-1">
                 <button onClick={() => setShowSnippetModal(true)} className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
                   <BookmarkPlus size={14} /> Lưu Snippet
                 </button>
@@ -476,7 +584,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                   theme="vs-dark"
                   defaultValue={defaultValues.html}
                   onChange={(value) => setHtmlCode(value || '')}
-                  onMount={handleEditorMount}
+                  onMount={(editor, monaco) => {
+                    htmlEditorRef.current = editor;
+                    handleEditorMount(editor, monaco);
+                  }}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,
@@ -506,7 +617,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                   theme="vs-dark"
                   defaultValue={defaultValues.css}
                   onChange={(value) => setCssCode(value || '')}
-                  onMount={handleEditorMount}
+                  onMount={(editor, monaco) => {
+                    cssEditorRef.current = editor;
+                    handleEditorMount(editor, monaco);
+                  }}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,
@@ -536,7 +650,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                   theme="vs-dark"
                   defaultValue={defaultValues.js}
                   onChange={(value) => setJsCode(value || '')}
-                  onMount={handleEditorMount}
+                  onMount={(editor, monaco) => {
+                    jsEditorRef.current = editor;
+                    handleEditorMount(editor, monaco);
+                  }}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,

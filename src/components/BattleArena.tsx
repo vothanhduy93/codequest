@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { updateDoc, doc } from 'firebase/firestore';
 import { useAppContext } from '../store';
 import { playSound } from '../lib/audio';
+import { customFormat } from '../lib/formatter';
 import Editor from '@monaco-editor/react';
 import { Play, CheckCircle, XCircle, Swords, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -18,6 +19,51 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   const [jsCode, setJsCode] = useState('');
   const [debouncedCode, setDebouncedCode] = useState<string>('');
   const [activeEditorTab, setActiveEditorTab] = useState<'html' | 'css' | 'js'>('html');
+
+  const htmlEditorRef = React.useRef<any>(null);
+  const cssEditorRef = React.useRef<any>(null);
+  const jsEditorRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const clickedInsideEditor = target.closest('.monaco-editor') || target.closest('.monaco-editor-background');
+      
+      if (!clickedInsideEditor) {
+        if (activeEditorTab === 'html' && htmlEditorRef.current) {
+          const currentValue = htmlEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'html');
+          if (formattedValue !== currentValue) {
+            const position = htmlEditorRef.current.getPosition();
+            htmlEditorRef.current.setValue(formattedValue);
+            if (position) htmlEditorRef.current.setPosition(position);
+          }
+        } else if (activeEditorTab === 'css' && cssEditorRef.current) {
+          const currentValue = cssEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'css');
+          if (formattedValue !== currentValue) {
+            const position = cssEditorRef.current.getPosition();
+            cssEditorRef.current.setValue(formattedValue);
+            if (position) cssEditorRef.current.setPosition(position);
+          }
+        } else if (activeEditorTab === 'js' && jsEditorRef.current) {
+          const currentValue = jsEditorRef.current.getValue();
+          const formattedValue = customFormat(currentValue, 'js');
+          if (formattedValue !== currentValue) {
+            const position = jsEditorRef.current.getPosition();
+            jsEditorRef.current.setValue(formattedValue);
+            if (position) jsEditorRef.current.setPosition(position);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleGlobalClick);
+    return () => {
+      document.removeEventListener('mousedown', handleGlobalClick);
+    };
+  }, [activeEditorTab]);
+
   const [pvpResult, setPvpResult] = useState<'win' | 'lose' | null>(null);
 
   const activeChallenge = challenges.find(c => c.id === matchData.challengeId);
@@ -150,9 +196,32 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   }, [debouncedCode, matchData.id, matchData.status, user]);
 
   const handleEditorMount = async (editor: any, monaco: any) => {
-    // Auto-format on blur
+    const performMyFormat = () => {
+      const currentValue = editor.getValue();
+      const uri = editor.getModel()?.uri?.toString() || '';
+      let type: 'html' | 'css' | 'js' = 'html';
+      if (uri.endsWith('.css')) type = 'css';
+      else if (uri.endsWith('.js') || uri.endsWith('.javascript')) type = 'js';
+      
+      const formattedValue = customFormat(currentValue, type);
+      if (formattedValue !== currentValue) {
+        const position = editor.getPosition();
+        editor.setValue(formattedValue);
+        if (position) {
+          editor.setPosition(position);
+        }
+      }
+    };
+
+    // Auto-format on focus change (blur events) representing editor blur state transitions
     editor.onDidBlurEditorText(() => {
       editor.getAction('editor.action.formatDocument')?.run();
+      performMyFormat();
+    });
+
+    editor.onDidBlurEditorWidget(() => {
+      editor.getAction('editor.action.formatDocument')?.run();
+      performMyFormat();
     });
   };
 
@@ -326,7 +395,10 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 theme="vs-dark" 
                 onChange={(v) => setHtmlCode(v || '')} 
                 value={htmlCode} 
-                onMount={handleEditorMount} 
+                onMount={(editor, monaco) => {
+                  htmlEditorRef.current = editor;
+                  handleEditorMount(editor, monaco);
+                }} 
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
@@ -351,7 +423,10 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 theme="vs-dark" 
                 onChange={(v) => setCssCode(v || '')} 
                 value={cssCode} 
-                onMount={handleEditorMount} 
+                onMount={(editor, monaco) => {
+                  cssEditorRef.current = editor;
+                  handleEditorMount(editor, monaco);
+                }} 
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
@@ -376,7 +451,10 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 theme="vs-dark" 
                 onChange={(v) => setJsCode(v || '')} 
                 value={jsCode} 
-                onMount={handleEditorMount} 
+                onMount={(editor, monaco) => {
+                  jsEditorRef.current = editor;
+                  handleEditorMount(editor, monaco);
+                }} 
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
