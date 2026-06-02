@@ -49,6 +49,31 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Shine and Holographic Effects */
+@keyframes sweep {
+  0% { transform: translateX(-150%) rotate(25deg); }
+  100% { transform: translateX(250%) rotate(25deg); }
+}
+.animate-sweep {
+  animation: sweep 4s infinite ease-in-out;
+}
+
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+}
+.animate-card-float {
+  animation: cardFloat 6s infinite ease-in-out;
+}
+
+@keyframes slow-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-slow-spin {
+  animation: slow-spin 20s infinite linear;
+}
+
 .markdown-body p {
   margin-bottom: 0.5rem;
 }

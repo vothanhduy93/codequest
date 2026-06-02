@@ -1,7 +1,7 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { AppProvider, useAppContext } from './store';
 import AuthModal from './components/AuthModal';
-import { LayoutDashboard, Code2, Trophy, MessageSquare, Swords, LogOut, Loader2, BookOpen, Menu, ShieldAlert, Bookmark } from 'lucide-react';
+import { LayoutDashboard, Code2, Trophy, MessageSquare, Swords, LogOut, Loader2, BookOpen, Menu, ShieldAlert, Bookmark, Medal } from 'lucide-react';
 import { cn } from './lib/utils';
 import { formatName } from './lib/nameUtils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,10 +15,11 @@ const LearnTab = lazy(() => import('./components/LearnTab'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const BattleTab = lazy(() => import('./components/BattleTab'));
 const NotebookTab = lazy(() => import('./components/NotebookTab'));
+const BadgesTab = lazy(() => import('./components/BadgesTab'));
 
 const AdminTab = lazy(() => import('./components/AdminTab'));
 
-type Tab = 'dashboard' | 'learn' | 'time_attack' | 'leaderboard' | 'battle' | 'notebook' | 'admin';
+type Tab = 'dashboard' | 'learn' | 'badges' | 'notebook' | 'time_attack' | 'battle' | 'leaderboard' | 'admin';
 
 function AppContent() {
   const { user, loading, signOut } = useAppContext();
@@ -48,6 +49,7 @@ function AppContent() {
   const tabs = [
     { id: 'dashboard', label: 'Tiến độ', icon: LayoutDashboard },
     { id: 'learn', label: 'Học tập', icon: BookOpen },
+    { id: 'badges', label: 'Huy hiệu', icon: Medal },
     { id: 'notebook', label: 'Sổ tay', icon: Bookmark },
     { id: 'time_attack', label: 'Đấu trường', icon: ShieldAlert },
     { id: 'battle', label: 'Thách đấu 1vs1', icon: Swords },
@@ -187,6 +189,7 @@ function AppContent() {
                 }>
                   {activeTab === 'dashboard' && <Dashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />}
                   {activeTab === 'learn' && <LearnTab />}
+                  {activeTab === 'badges' && <BadgesTab />}
                   {activeTab === 'notebook' && <NotebookTab />}
                   {activeTab === 'time_attack' && <Arena kind="lesson" mode="time_attack" />}
                   {activeTab === 'battle' && <BattleTab />}
