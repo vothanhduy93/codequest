@@ -590,11 +590,6 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             </div>
             <div 
               className="flex-1 w-full relative min-h-0"
-              onPasteCapture={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                alert('Vui lòng tự gõ code để luyện tập, chức năng copy/paste đã bị vô hiệu hóa!');
-              }}
             >
               {showHint && mode !== 'time_attack' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[60] bg-slate-900/95 backdrop-blur-md p-6 text-sm flex flex-col gap-4 overflow-y-auto border-t border-white/10 shadow-2xl">
