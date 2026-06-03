@@ -56,11 +56,7 @@ export const BADGES: Record<string, Badge> = {
   }
 };
 
-export const CHALLENGES: Challenge[] = [
-  ...extraHtml,
-  ...extraCss,
-  ...extraJs
-];
+export const CHALLENGES: Challenge[] = [];
 
 export const getNextChallenge = (completedIds: string[], kind: 'lesson' | 'challenge' = 'lesson') => {
   return CHALLENGES.find(c => c.kind === kind && !completedIds.includes(c.id));

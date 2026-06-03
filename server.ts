@@ -112,6 +112,118 @@ async function startServer() {
     ]);
   });
 
+  app.get('/api/fcc-sync', async (req, res) => {
+    try {
+      const folders = [
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/basic-html-and-html5', type: 'html' },
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/basic-css', type: 'css' },
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/css-flexbox', type: 'css' },
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/css-grid', type: 'css' },
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/basic-javascript', type: 'js' },
+        { url: 'https://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/es6', type: 'js' }
+      ];
+
+      const fetchWithRetry = async (url: string, retries = 3): Promise<any> => {
+        try {
+          const r = await fetch(url, { headers: { 'User-Agent': 'AI-Studio-Applet' } });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return await r.text();
+        } catch (e) {
+          if (retries > 0) return fetchWithRetry(url, retries - 1);
+          throw e;
+        }
+      };
+
+      const allFiles = [];
+      for (const folder of folders) {
+        try {
+          const html = await fetchWithRetry(folder.url);
+          const links = [...new Set([...html.matchAll(/href=\"([^\"]+\.md)\"/g)].map(m => m[1]))];
+          const rawUrls = links.map(link => ({
+            download_url: 'https://raw.githubusercontent.com' + link.replace('/blob/', '/'),
+            type: folder.type
+          }));
+          allFiles.push(...rawUrls);
+        } catch (error) {
+          console.error(`Failed to fetch ${folder.url}`, error);
+        }
+      }
+
+      if (allFiles.length === 0) {
+        return res.status(500).json({ error: 'Failed to access Github API (rate limit?)' });
+      }
+
+      const challenges = [];
+      let globalId = 1000;
+      
+      // Process in batches to avoid overwhelming the network
+      const batchSize = 30;
+      // Truncate to a reasonable amount if needed, or fetch all (up to 185)
+      // Here let's just fetch all of them but in chunks
+      for (let i = 0; i < allFiles.length; i += batchSize) {
+        const batch = allFiles.slice(i, i + batchSize);
+        const mdContents = await Promise.all(
+          batch.map(async (f) => {
+            try {
+              const text = await fetch(f.download_url).then(r => r.text());
+              return { text, type: f.type };
+            } catch (e) {
+              return null;
+            }
+          })
+        );
+
+        for (const item of mdContents) {
+          if (!item) continue;
+          const { text, type } = item;
+          let title = "Tự động tải";
+          let titleMatch = text.match(/title:\s+(.*)/);
+          if (titleMatch) title = titleMatch[1].replace(/['"]/g, '');
+          
+          let desc = "Không có mô tả.";
+          let descMatch = text.match(/# --description--\n\n([\s\S]*?)\n\n# --instructions--/);
+          if (descMatch) desc = descMatch[1].replace(/```html/g, '').replace(/```css/g, '').replace(/```javascript/g, '').replace(/```js/g, '').replace(/```/g, '');
+          
+          let instructions = 'Hãy làm theo hướng dẫn hệ thống';
+          let instructionsMatch = text.match(/# --instructions--\n\n([\s\S]*?)\n\n# --hints--/);
+          if (instructionsMatch) instructions = instructionsMatch[1].replace(/```html/g, '').replace(/```css/g, '').replace(/```javascript/g, '').replace(/```js/g, '').replace(/```/g, '');
+
+          let defaultCode = '<!-- Code ở đây -->\n';
+          let defaultCodeMatch = text.match(/## --seed-contents--\n\n```[a-z]*\n([\s\S]*?)```/);
+          if (defaultCodeMatch) defaultCode = defaultCodeMatch[1];
+          else {
+             let altSeedMatch = text.match(/# --seed--\n\n```[a-z]*\n([\s\S]*?)```/);
+             if (altSeedMatch) defaultCode = altSeedMatch[1];
+          }
+
+          let solution = '...';
+          let solutionMatch = text.match(/# --solutions--\n\n```[a-z]*\n([\s\S]*?)```/);
+          if (solutionMatch) solution = solutionMatch[1];
+
+          challenges.push({
+            id: `fcc_${globalId++}`,
+            title: `${title}`,
+            difficulty: 'Trung bình',
+            type: type,
+            kind: 'lesson',
+            description: desc,
+            instructions: instructions,
+            hint: 'Đọc kỹ yêu cầu',
+            solution: solution,
+            defaultCode: defaultCode,
+            xpReward: 100,
+            validationSnippet: 'return true;' // Auto pass for demo
+          });
+        }
+      }
+      
+      res.json(challenges);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to sync with Github API' });
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
