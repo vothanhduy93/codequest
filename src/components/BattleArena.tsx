@@ -263,6 +263,26 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
 
   const validateCode = () => {
     playSound('click');
+    if (activeChallenge) {
+      const normalizeClean = (s: string) => {
+        if (!s) return '';
+        return s.toLowerCase()
+          .replace(/[\s\.,!\?]/g, '')
+          .replace(/['"`]/g, '')
+          .replace(/;\s*$/g, '')
+          .trim();
+      };
+      
+      const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
+      if (!hasMeaningfulValidation && activeChallenge.solution) {
+         if (normalizeClean(debouncedCode) !== normalizeClean(activeChallenge.solution)) {
+            // PVP doesn't show detailed diagnostics, just fail validation silently or alert
+            console.log("Validation failed via string check in PvP");
+            return;
+         }
+      }
+    }
+
     const iframe = document.getElementById('pvp-preview-frame') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage('validate', '*');

@@ -364,7 +364,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       const normalizeClean = (s: string) => {
         if (!s) return '';
         return s.toLowerCase()
-          .replace(/\s+/g, '')
+          .replace(/[\s\.,!\?]/g, '')
           .replace(/['"`]/g, '')
           .replace(/;\s*$/g, '')
           .trim();
