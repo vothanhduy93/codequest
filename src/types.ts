@@ -27,6 +27,7 @@ export interface User {
     claimed: string[];
   };
   snippets?: Snippet[];
+  resetV1?: boolean;
 }
 
 export interface Badge {

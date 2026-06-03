@@ -224,12 +224,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               needsUpdate = true;
             }
 
-            if (updatedData.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
-              const allIds = LOCAL_CHALLENGES.map(c => c.id);
-              if (updatedData.completedChallenges.length !== allIds.length && allIds.length > 0) {
-                updatedData.completedChallenges = allIds;
-                needsUpdate = true;
-              }
+            if (!updatedData.resetV1) {
+              updatedData.completedChallenges = [];
+              updatedData.xp = 0;
+              updatedData.level = 1;
+              updatedData.badges = [];
+              updatedData.streak = 0;
+              updatedData.streakFreezes = 0;
+              updatedData.coins = 0;
+              updatedData.resetV1 = true;
+              needsUpdate = true;
             }
 
             if (needsUpdate) {
@@ -242,10 +246,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (authUser.email) {
               newUser.email = authUser.email;
             }
-            
-            if (newUser.name === 'Thanh Duy Võ' || authUser.displayName === 'Thanh Duy Võ' || authUser.email === 'hcmc.duyvo@gmail.com') {
-              newUser.completedChallenges = LOCAL_CHALLENGES.map(c => c.id);
-            }
+            newUser.resetV1 = true;
 
             await setDoc(userRef, newUser);
             setUser(newUser);
