@@ -5,7 +5,7 @@ import { useAppContext } from '../store';
 import { playSound } from '../lib/audio';
 import { customFormat } from '../lib/formatter';
 import Editor from '@monaco-editor/react';
-import { Play, CheckCircle, XCircle, Swords, ArrowLeft } from 'lucide-react';
+import { Play, CheckCircle, XCircle, Swords, ArrowLeft, Wand2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { formatName } from '../lib/nameUtils';
@@ -225,6 +225,42 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
     });
   };
 
+  const handleBeautify = () => {
+    playSound('pop');
+    let currentValue = '';
+    let type: 'html' | 'css' | 'js' = 'html';
+    
+    if (activeEditorTab === 'html' && htmlEditorRef.current) {
+      currentValue = htmlEditorRef.current.getValue();
+      type = 'html';
+    } else if (activeEditorTab === 'css' && cssEditorRef.current) {
+      currentValue = cssEditorRef.current.getValue();
+      type = 'css';
+    } else if (activeEditorTab === 'js' && jsEditorRef.current) {
+      currentValue = jsEditorRef.current.getValue();
+      type = 'js';
+    }
+
+    if (!currentValue) return;
+
+    const formattedValue = customFormat(currentValue, type);
+    if (formattedValue !== currentValue) {
+      if (activeEditorTab === 'html') {
+        const position = htmlEditorRef.current.getPosition();
+        htmlEditorRef.current.setValue(formattedValue);
+        if (position) htmlEditorRef.current.setPosition(position);
+      } else if (activeEditorTab === 'css') {
+        const position = cssEditorRef.current.getPosition();
+        cssEditorRef.current.setValue(formattedValue);
+        if (position) cssEditorRef.current.setPosition(position);
+      } else if (activeEditorTab === 'js') {
+        const position = jsEditorRef.current.getPosition();
+        jsEditorRef.current.setValue(formattedValue);
+        if (position) jsEditorRef.current.setPosition(position);
+      }
+    }
+  };
+
   const validateCode = () => {
     playSound('click');
     const iframe = document.getElementById('pvp-preview-frame') as HTMLIFrameElement;
@@ -384,6 +420,11 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 {tab}
               </button>
             ))}
+            <div className="ml-auto flex items-center mb-2">
+               <button onClick={handleBeautify} title="Format / Làm đẹp cấu trúc Code" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
+                  <Wand2 size={14} /> Beautify Code
+               </button>
+            </div>
           </div>
 
           <div className="flex-1 relative">
