@@ -18,6 +18,8 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
   
   const isHtmlPassed = htmlChallenges.length > 0 && user.completedChallenges.includes(htmlChallenges[htmlChallenges.length - 1].id);
   const isCssPassed = cssChallenges.length > 0 && user.completedChallenges.includes(cssChallenges[cssChallenges.length - 1].id);
+  
+  const isSpecialUser = user?.email === 'hcmc.duyvo@gmail.com';
 
 
   const renderList = (categoryKey: 'html' | 'css' | 'js', title: string, colorClass: string, isUnlocked: boolean) => {
@@ -33,8 +35,8 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-l-2 border-slate-800/50 pl-4 py-2">
           {sectionChallenges.map((challenge, index) => {
             const isCompleted = user.completedChallenges.includes(challenge.id);
-            const isLocked = !isUnlocked || (index > 0 && !user.completedChallenges.includes(sectionChallenges[index - 1].id));
-            const isCurrent = !isLocked && !isCompleted && (index === 0 || user.completedChallenges.includes(sectionChallenges[index - 1].id));
+            const isLocked = !isSpecialUser && (!isUnlocked || (index > 0 && !user.completedChallenges.includes(sectionChallenges[index - 1].id)));
+            const isCurrent = isSpecialUser ? (!isCompleted) : (!isLocked && !isCompleted && (index === 0 || user.completedChallenges.includes(sectionChallenges[index - 1].id)));
 
             return (
               <button
@@ -91,8 +93,8 @@ export default function SkillTree({ onSelectChallenge, onStartAIChallenge }: { o
       
       <div className="flex flex-col pb-24">
         {renderList('html', 'Vùng đất HTML', 'text-orange-400', true)}
-        {renderList('css', 'Ảo thuật CSS', 'text-blue-400', isHtmlPassed)}
-        {renderList('js', 'Ma thuật JS', 'text-yellow-400', isCssPassed)}
+        {renderList('css', 'Ảo thuật CSS', 'text-blue-400', isSpecialUser || isHtmlPassed)}
+        {renderList('js', 'Ma thuật JS', 'text-yellow-400', isSpecialUser || isCssPassed)}
       </div>
     </div>
   );
