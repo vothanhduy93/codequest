@@ -624,10 +624,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
         </div>
 
         {/* Editor & Preview */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[600px] h-[750px] md:h-[850px]">
-          <div className="glass flex flex-col overflow-hidden relative">
-            <div className="bg-white/5 flex items-center border-b border-white/10">
-              <div className="flex gap-1 p-2 flex-1">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 min-h-[800px] lg:min-h-[600px] lg:h-[850px] mb-8">
+          <div className="glass flex flex-col overflow-hidden relative min-h-[400px]">
+            <div className="bg-white/5 flex flex-col sm:flex-row sm:items-center border-b border-white/10">
+              <div className="flex gap-1 p-2 flex-1 overflow-x-auto whitespace-nowrap">
                 {(['html', 'css', 'js'] as const).map(tab => (
                   <button
                     key={tab}
@@ -643,15 +643,15 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-1">
-                <button onClick={handleBeautify} title="Format / Làm đẹp cấu trúc Code (Shift+Alt+F)" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
-                  <Wand2 size={14} /> Beautify Code
+              <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap px-2 pb-2 sm:pb-0 sm:px-0">
+                <button onClick={handleBeautify} title="Format / Làm đẹp cấu trúc Code (Shift+Alt+F)" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 text-xs font-medium pr-3 transition-colors shrink-0">
+                  <Wand2 size={14} /> Beautify
                 </button>
-                <button onClick={() => setShowSnippetModal(true)} className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
+                <button onClick={() => setShowSnippetModal(true)} className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-xs font-medium pr-3 transition-colors shrink-0">
                   <BookmarkPlus size={14} /> Lưu Snippet
                 </button>
                 {mode !== 'time_attack' && (
-                  <button onClick={() => { playSound('pop'); setShowHint(!showHint); }} className="text-yellow-500 hover:text-yellow-400 flex items-center gap-1 text-xs font-medium pr-4 transition-colors">
+                  <button onClick={() => { playSound('pop'); setShowHint(!showHint); }} className="text-yellow-500 hover:text-yellow-400 flex items-center gap-1 text-xs font-medium pr-4 transition-colors shrink-0">
                     <Lightbulb size={14} /> {showHint ? 'Ẩn đáp án' : 'Xem đáp án'}
                   </button>
                 )}
@@ -669,6 +669,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                         <SyntaxHighlighter
                           language={activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css'}
                           style={atomDark}
+                          wrapLines={true}
+                          wrapLongLines={true}
                           customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
                         >
                           {activeChallenge.solution}
@@ -793,7 +795,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             </div>
           </div>
 
-          <div className="glass bg-white/90 !border-0 overflow-hidden relative">
+          <div className="glass bg-white/90 !border-0 overflow-hidden relative min-h-[400px]">
             <iframe
               id="preview-frame"
               srcDoc={srcDoc}

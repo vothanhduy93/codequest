@@ -24,7 +24,7 @@ type Tab = 'dashboard' | 'learn' | 'badges' | 'notebook' | 'time_attack' | 'batt
 function AppContent() {
   const { user, loading, signOut } = useAppContext();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
   if (loading) {
     return (
@@ -98,13 +98,22 @@ function AppContent() {
         {/* Sidebar Navigation */}
         <AnimatePresence initial={false}>
           {isSidebarOpen && (
-            <motion.nav 
-              initial={{ width: 0, opacity: 0, margin: 0 }}
-              animate={{ width: 256, opacity: 1, marginLeft: 16, marginRight: 16 }}
-              exit={{ width: 0, opacity: 0, margin: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="glass flex flex-col py-6 my-4 h-[calc(100vh-6rem)] shrink-0 overflow-hidden whitespace-nowrap z-20 absolute lg:relative left-0 lg:left-auto"
-            >
+            <>
+              {/* Mobile Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+              <motion.nav 
+                initial={{ width: 0, opacity: 0, margin: 0 }}
+                animate={{ width: 256, opacity: 1, marginLeft: 16, marginRight: 16 }}
+                exit={{ width: 0, opacity: 0, margin: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="glass border-white/10 shadow-2xl lg:shadow-none flex flex-col py-6 my-4 h-[calc(100vh-6rem)] shrink-0 overflow-hidden whitespace-nowrap z-50 absolute lg:relative left-0 lg:left-auto bg-slate-900/95 lg:bg-transparent"
+              >
               <div className="flex items-center justify-between px-6 mb-8">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-teal-400 rounded-xl flex items-center justify-center font-bold text-slate-900 text-lg shadow-[0_0_20px_rgba(45,212,191,0.5)] shrink-0">
@@ -167,6 +176,7 @@ function AppContent() {
                 </button>
               </div>
             </motion.nav>
+            </>
           )}
         </AnimatePresence>
 

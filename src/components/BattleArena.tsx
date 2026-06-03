@@ -396,9 +396,9 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
       )}
 
       {/* Editor & Preview Workspace */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {/* Opponent Editor (Read-Only) */}
-        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-white/10 opacity-80 pointer-events-none">
+        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-white/10 opacity-80 pointer-events-none min-h-[300px]">
           <div className="p-4 bg-slate-800 border-b border-white/5 pb-0 flex gap-2">
             {['html', 'css', 'js'].map(tab => (
               <button
@@ -429,7 +429,7 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
         </div>
 
         {/* My Editor */}
-        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-teal-500/30 ring-1 ring-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.15)]">
+        <div className="glass rounded-xl overflow-hidden flex flex-col relative border-teal-500/30 ring-1 ring-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.15)] min-h-[400px]">
           {!isStarted ? (
             <div className="absolute inset-0 z-40 bg-slate-900/90 flex flex-col items-center justify-center backdrop-blur-sm">
               <h2 className="text-2xl font-bold text-slate-50 mb-4">Chuẩn bị!</h2>
@@ -593,7 +593,7 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 }
               }}>{activeChallenge.instructions}</Markdown></div>
           </div>
-          <div className="glass bg-white/90 flex-1 overflow-hidden relative">
+          <div className="glass bg-white/90 flex-1 overflow-hidden relative min-h-[400px]">
             <iframe id="pvp-preview-frame" srcDoc={srcDoc} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
           </div>
         </div>
