@@ -411,7 +411,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             if (diagnostic) {
               setErrorMsg(`Code chưa chính xác: ${diagnostic}`);
             } else {
-              setErrorMsg('Code chưa chính xác theo đáp án mẫu. Gợi ý: Hãy viết theo cấu trúc:\n<!DOCTYPE html>\n<html>\n  <h1>Nội dung</h1>\n</html>');
+              setErrorMsg('Code chưa chính xác so với yêu cầu đề bài. Gợi ý: Hãy đọc lại đề hoặc sử dụng "Xem đáp án" để tham khảo nhé.');
             }
             return;
          }
@@ -597,11 +597,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     <div className="mt-2">
                       <span className="font-bold text-teal-400 text-base">✅ Đáp án tham khảo:</span>
                       <pre 
-                        className="p-4 bg-black/50 rounded-xl mt-2 text-primary-300 font-mono text-sm overflow-x-auto border border-white/10 select-none shadow-inner"
-                        onCopy={(e) => {
-                          e.preventDefault();
-                          alert('Không cho phép copy đáp án! Hãy tự gõ để luyện tập bạn nhé.');
-                        }}
+                        className="p-4 bg-black/50 rounded-xl mt-2 text-primary-300 font-mono text-sm overflow-x-auto border border-white/10 shadow-inner"
                       >
                         <code>{activeChallenge.solution}</code>
                       </pre>
@@ -717,7 +713,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                 <Play size={18} /> Chạy Code & Kiểm tra
               </button>
               {errorMsg && (
-                <div className="mt-3 text-red-400 text-sm font-medium text-center animate-pulse">
+                <div className="mt-3 text-red-400 text-sm font-medium text-left bg-red-400/10 p-3 rounded-lg border border-red-400/20 whitespace-pre-wrap">
                   {errorMsg}
                 </div>
               )}
