@@ -10,6 +10,9 @@ import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { formatName } from '../lib/nameUtils';
 import confetti from 'canvas-confetti';
+import Markdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function BattleArena({ matchData, onLeave }: { matchData: any, onLeave: () => void }) {
   const { user, challenges, resolvePvP } = useAppContext();
@@ -196,6 +199,10 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   }, [debouncedCode, matchData.id, matchData.status, user]);
 
   const handleEditorMount = async (editor: any, monaco: any) => {
+    const { emmetHTML, emmetCSS } = await import('emmet-monaco-es');
+    emmetHTML(monaco);
+    emmetCSS(monaco);
+
     const performMyFormat = () => {
       const currentValue = editor.getValue();
       const uri = editor.getModel()?.uri?.toString() || '';
@@ -463,16 +470,16 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
-                  quickSuggestions: false,
-                  suggestOnTriggerCharacters: false,
-                  acceptSuggestionOnEnter: "off",
-                  tabCompletion: "off",
+                  quickSuggestions: true,
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: "on",
+                  tabCompletion: "on",
                   wordBasedSuggestions: "off",
-                  snippetSuggestions: "none",
-                  inlineSuggest: { enabled: false },
+                  snippetSuggestions: "inline",
+                  inlineSuggest: { enabled: true },
                   parameterHints: { enabled: false },
-                  autoClosingBrackets: "never",
-                  autoClosingQuotes: "never"
+                  autoClosingBrackets: "languageDefined",
+                  autoClosingQuotes: "languageDefined"
                 }} 
               />
             </div>
@@ -491,16 +498,16 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
-                  quickSuggestions: false,
-                  suggestOnTriggerCharacters: false,
-                  acceptSuggestionOnEnter: "off",
-                  tabCompletion: "off",
+                  quickSuggestions: true,
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: "on",
+                  tabCompletion: "on",
                   wordBasedSuggestions: "off",
-                  snippetSuggestions: "none",
-                  inlineSuggest: { enabled: false },
+                  snippetSuggestions: "inline",
+                  inlineSuggest: { enabled: true },
                   parameterHints: { enabled: false },
-                  autoClosingBrackets: "never",
-                  autoClosingQuotes: "never"
+                  autoClosingBrackets: "languageDefined",
+                  autoClosingQuotes: "languageDefined"
                 }} 
               />
             </div>
@@ -519,16 +526,16 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
                 options={{ 
                   minimap: { enabled: false }, 
                   fontSize: 14,
-                  quickSuggestions: false,
-                  suggestOnTriggerCharacters: false,
-                  acceptSuggestionOnEnter: "off",
-                  tabCompletion: "off",
+                  quickSuggestions: true,
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: "on",
+                  tabCompletion: "on",
                   wordBasedSuggestions: "off",
-                  snippetSuggestions: "none",
-                  inlineSuggest: { enabled: false },
+                  snippetSuggestions: "inline",
+                  inlineSuggest: { enabled: true },
                   parameterHints: { enabled: false },
-                  autoClosingBrackets: "never",
-                  autoClosingQuotes: "never"
+                  autoClosingBrackets: "languageDefined",
+                  autoClosingQuotes: "languageDefined"
                 }} 
               />
             </div>
@@ -544,8 +551,42 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
         {/* Preview & Prompt */}
         <div className="flex flex-col gap-4">
           <div className="glass p-6 max-h-48 overflow-y-auto">
-             <h2 className="font-bold text-red-400 uppercase tracking-wider text-sm mb-2">{activeChallenge.title}</h2>
-             <p className="text-slate-300 text-sm whitespace-pre-wrap">{activeChallenge.instructions}</p>
+             <h2 className="font-bold text-red-400 uppercase tracking-wider text-sm mb-2"><Markdown>{activeChallenge.title}</Markdown></h2>
+             <div className="text-slate-300 text-sm whitespace-pre-wrap"><Markdown components={{
+                p: ({node, ...props}: any) => <span {...props} />,
+                code: ({node, className, children, ...props}: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const str = String(children).replace(/\n$/, '');
+                  const isBlock = str.includes('\n') || !!match;
+                  const lang = match ? match[1] : (activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css');
+                  
+                  if (!isBlock) {
+                    return (
+                      <SyntaxHighlighter
+                        PreTag="span"
+                        language={lang}
+                        style={atomDark}
+                        customStyle={{ padding: '0.1rem 0.3rem', borderRadius: '0.25rem', display: 'inline', background: 'rgba(0,0,0,0.4)', fontFamily: 'monospace' }}
+                        {...props}
+                      >
+                        {str}
+                      </SyntaxHighlighter>
+                    );
+                  }
+                  
+                  return (
+                    <SyntaxHighlighter
+                      PreTag="div"
+                      language={lang}
+                      style={atomDark}
+                      customStyle={{ margin: '0.5rem 0', padding: '1rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      {...props}
+                    >
+                      {str}
+                    </SyntaxHighlighter>
+                  );
+                }
+              }}>{activeChallenge.instructions}</Markdown></div>
           </div>
           <div className="glass bg-white/90 flex-1 overflow-hidden relative">
             <iframe id="pvp-preview-frame" srcDoc={srcDoc} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />

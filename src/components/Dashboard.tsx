@@ -564,9 +564,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (tab: string) =
         )}
       </motion.div>
 
-      <button onClick={resetProgress} className="text-red-500 text-sm hover:underline" data-html2canvas-ignore>
-        Xóa toàn bộ tiến trình (Chỉ dùng khi thử nghiệm)
-      </button>
+
 
     </div>
   );

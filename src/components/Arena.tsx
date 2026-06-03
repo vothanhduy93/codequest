@@ -9,6 +9,8 @@ import { playSound } from '../lib/audio';
 import { customFormat } from '../lib/formatter';
 import Markdown from 'react-markdown';
 
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { createPortal } from 'react-dom';
 
 export default function Arena({ kind, mode = 'learn', initialChallengeId, customChallenge, onChallengeComplete }: { kind: 'lesson' | 'challenge', mode?: 'learn' | 'time_attack', initialChallengeId?: string, customChallenge?: any, onChallengeComplete?: () => void }) {
@@ -536,11 +538,44 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                 {/* Translation button removed */}
               </div>
               <div className="text-slate-400 mt-2 text-sm leading-relaxed">
-                <pre className="whitespace-pre-wrap font-sans">
-                  <Markdown components={{ code: ({node, ...props}) => <code className="bg-black/30 px-1 rounded text-primary-300" {...props} /> }}>
+                <div className="whitespace-pre-wrap font-sans">
+                  <Markdown components={{
+                    code: ({node, className, children, ...props}: any) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const str = String(children).replace(/\n$/, '');
+                      const isBlock = str.includes('\n') || !!match;
+                      const lang = match ? match[1] : (activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css');
+                      
+                      if (!isBlock) {
+                        return (
+                          <SyntaxHighlighter
+                            PreTag="span"
+                            language={lang}
+                            style={atomDark}
+                            customStyle={{ padding: '0.1rem 0.3rem', borderRadius: '0.25rem', display: 'inline', background: 'rgba(0,0,0,0.4)', fontFamily: 'monospace' }}
+                            {...props}
+                          >
+                            {str}
+                          </SyntaxHighlighter>
+                        );
+                      }
+                      
+                      return (
+                        <SyntaxHighlighter
+                          PreTag="div"
+                          language={lang}
+                          style={atomDark}
+                          customStyle={{ margin: '0.5rem 0', padding: '1rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                          {...props}
+                        >
+                          {str}
+                        </SyntaxHighlighter>
+                      );
+                    }
+                  }}>
                     {activeChallenge.description}
                   </Markdown>
-                </pre>
+                </div>
               </div>
             </div>
             <div className="bg-white/10 px-3 py-1 rounded-full text-sm text-teal-400 font-bold border border-white/10 shrink-0">
@@ -548,9 +583,43 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             </div>
           </div>
           <div className="bg-blue-500/10 p-4 rounded-xl text-slate-300 text-sm border-l-4 border-blue-500">
-            <pre className="whitespace-pre-wrap font-sans">
-              <strong>Nhiệm vụ:</strong> <Markdown components={{ p: ({node, ...props}) => <span {...props} />, code: ({node, ...props}) => <code className="bg-black/30 px-1 rounded text-primary-300" {...props} /> }}>{activeChallenge.instructions}</Markdown>
-            </pre>
+            <div className="whitespace-pre-wrap font-sans flex items-start flex-wrap gap-x-2">
+              <strong>Nhiệm vụ:</strong> <Markdown components={{
+                p: ({node, ...props}: any) => <span {...props} />,
+                code: ({node, className, children, ...props}: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const str = String(children).replace(/\n$/, '');
+                  const isBlock = str.includes('\n') || !!match;
+                  const lang = match ? match[1] : (activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css');
+                  
+                  if (!isBlock) {
+                    return (
+                      <SyntaxHighlighter
+                        PreTag="span"
+                        language={lang}
+                        style={atomDark}
+                        customStyle={{ padding: '0.1rem 0.3rem', borderRadius: '0.25rem', display: 'inline', background: 'rgba(0,0,0,0.4)', fontFamily: 'monospace' }}
+                        {...props}
+                      >
+                        {str}
+                      </SyntaxHighlighter>
+                    );
+                  }
+                  
+                  return (
+                    <SyntaxHighlighter
+                      PreTag="div"
+                      language={lang}
+                      style={atomDark}
+                      customStyle={{ margin: '0.5rem 0', padding: '1rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      {...props}
+                    >
+                      {str}
+                    </SyntaxHighlighter>
+                  );
+                }
+              }}>{activeChallenge.instructions}</Markdown>
+            </div>
           </div>
         </div>
 
@@ -594,13 +663,17 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
               {showHint && mode !== 'time_attack' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[60] bg-slate-900/95 backdrop-blur-md p-6 text-sm flex flex-col gap-4 overflow-y-auto border-t border-white/10 shadow-2xl">
                   {activeChallenge.solution && (
-                    <div className="mt-2">
+                    <div className="mt-2 text-left">
                       <span className="font-bold text-teal-400 text-base">✅ Đáp án tham khảo:</span>
-                      <pre 
-                        className="p-4 bg-black/50 rounded-xl mt-2 text-primary-300 font-mono text-sm overflow-x-auto border border-white/10 shadow-inner"
-                      >
-                        <code>{activeChallenge.solution}</code>
-                      </pre>
+                      <div className="mt-2 rounded-xl bg-black/50 border border-white/10 overflow-hidden shadow-inner text-sm">
+                        <SyntaxHighlighter
+                          language={activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css'}
+                          style={atomDark}
+                          customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+                        >
+                          {activeChallenge.solution}
+                        </SyntaxHighlighter>
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -625,16 +698,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
-                    quickSuggestions: false,
-                    suggestOnTriggerCharacters: false,
-                    acceptSuggestionOnEnter: "off",
-                    tabCompletion: "off",
+                    quickSuggestions: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: "on",
+                    tabCompletion: "on",
                     wordBasedSuggestions: "off",
-                    snippetSuggestions: "none",
-                    inlineSuggest: { enabled: false },
+                    snippetSuggestions: "inline",
+                    inlineSuggest: { enabled: true },
                     parameterHints: { enabled: false },
-                    autoClosingBrackets: "never",
-                    autoClosingQuotes: "never"
+                    autoClosingBrackets: "languageDefined",
+                    autoClosingQuotes: "languageDefined"
                   }}
                 />
               </div>
@@ -658,16 +731,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
-                    quickSuggestions: false,
-                    suggestOnTriggerCharacters: false,
-                    acceptSuggestionOnEnter: "off",
-                    tabCompletion: "off",
+                    quickSuggestions: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: "on",
+                    tabCompletion: "on",
                     wordBasedSuggestions: "off",
-                    snippetSuggestions: "none",
-                    inlineSuggest: { enabled: false },
+                    snippetSuggestions: "inline",
+                    inlineSuggest: { enabled: true },
                     parameterHints: { enabled: false },
-                    autoClosingBrackets: "never",
-                    autoClosingQuotes: "never"
+                    autoClosingBrackets: "languageDefined",
+                    autoClosingQuotes: "languageDefined"
                   }}
                 />
               </div>
@@ -691,16 +764,16 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                     formatOnType: true,
                     formatOnPaste: true,
                     padding: { top: 16 },
-                    quickSuggestions: false,
-                    suggestOnTriggerCharacters: false,
-                    acceptSuggestionOnEnter: "off",
-                    tabCompletion: "off",
+                    quickSuggestions: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: "on",
+                    tabCompletion: "on",
                     wordBasedSuggestions: "off",
-                    snippetSuggestions: "none",
-                    inlineSuggest: { enabled: false },
+                    snippetSuggestions: "inline",
+                    inlineSuggest: { enabled: true },
                     parameterHints: { enabled: false },
-                    autoClosingBrackets: "never",
-                    autoClosingQuotes: "never"
+                    autoClosingBrackets: "languageDefined",
+                    autoClosingQuotes: "languageDefined"
                   }}
                 />
               </div>
