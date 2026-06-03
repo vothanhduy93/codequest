@@ -90,39 +90,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadChallenges = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'challenges'));
-        let dbChallenges: Challenge[] = [];
-        querySnapshot.forEach((doc) => {
-          dbChallenges.push(doc.data() as Challenge);
-        });
-
-        if (dbChallenges.length < 230) {
-          // Sync from API if missing some lessons
-          const res = await fetch('/api/fcc-sync');
-          if (res.ok) {
-            const apiChallenges = await res.json();
-            if (Array.isArray(apiChallenges) && apiChallenges.length > 0) {
-              const cleanedApi = apiChallenges.map((c: any) => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
-              setChallenges(healChallenges([...LOCAL_CHALLENGES, ...cleanedApi]));
-              // Save to Firestore
-              for (const c of cleanedApi) {
-                try { await setDoc(doc(db, 'challenges', c.id), c); } catch (e) {}
-              }
-            }
-          }
-        } else {
-          // Sort by id assuming they follow fcc_1... or something similar
-          dbChallenges.sort((a, b) => a.id.localeCompare(b.id));
-          dbChallenges = dbChallenges.map(c => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
-          setChallenges(healChallenges([...LOCAL_CHALLENGES, ...dbChallenges]));
-        }
-      } catch (e) {
-        console.error('Failed to load challenges', e);
-      }
-    };
-    loadChallenges();
+    // Only use local challenges to guarantee strict FreeCodeCamp curriculum order and Vietnamese translations
+    setChallenges(LOCAL_CHALLENGES);
   }, []);
 
   const clearNewEarnedBadge = (badgeId: string) => {
