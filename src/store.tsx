@@ -4,6 +4,7 @@ import { LEVEL_THRESHOLDS, BADGES, CHALLENGES as LOCAL_CHALLENGES } from './data
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import fccOrder from './fccOrder.json';
 
 interface AppContextType {
   user: User | null;
@@ -105,6 +106,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const apiChallenges = await res.json();
             if (Array.isArray(apiChallenges) && apiChallenges.length > 0) {
               const cleanedApi = apiChallenges.map((c: any) => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
+              cleanedApi.sort((a: any, b: any) => {
+                const indexA = fccOrder.indexOf(a.id);
+                const indexB = fccOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.id.localeCompare(b.id);
+              });
               setChallenges(healChallenges([...LOCAL_CHALLENGES, ...cleanedApi]));
               // Save to Firestore
               for (const c of cleanedApi) {
@@ -113,8 +122,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } else {
-          // Sort by id assuming they follow fcc_1... or something similar
-          dbChallenges.sort((a, b) => a.id.localeCompare(b.id));
+          // Sort using the correct freeCodeCamp curriculum file true order
+          dbChallenges.sort((a, b) => {
+            const indexA = fccOrder.indexOf(a.id);
+            const indexB = fccOrder.indexOf(b.id);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.id.localeCompare(b.id);
+          });
           dbChallenges = dbChallenges.map(c => ({ ...c, title: c.title.replace(/^FCC:\s*/, '') }));
           setChallenges(healChallenges([...LOCAL_CHALLENGES, ...dbChallenges]));
         }
