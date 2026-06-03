@@ -174,6 +174,11 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
   useEffect(() => {
     const timer = setTimeout(() => {
       let combined = htmlCode;
+      const version = Date.now().toString();
+      combined = combined
+        .replace(/href=(["'])(?:\.\/)?style\.css(?:\?v=[^"']*)?\1/gi, `href=$1style.css?v=${version}$1`)
+        .replace(/src=(["'])(?:\.\/)?script\.js(?:\?v=[^"']*)?\1/gi, `src=$1script.js?v=${version}$1`);
+
       if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
       if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
       setDebouncedCode(combined);

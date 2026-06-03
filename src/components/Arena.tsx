@@ -126,8 +126,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       let combined = htmlCode;
       const version = Date.now().toString();
       combined = combined
-        .replace(/href=(["'])style\.css(?:\?v=[^"']*)?\1/gi, `href="style.css?v=${version}"`)
-        .replace(/src=(["'])script\.js(?:\?v=[^"']*)?\1/gi, `src="script.js?v=${version}"`);
+        .replace(/href=(["'])(?:\.\/)?style\.css(?:\?v=[^"']*)?\1/gi, `href=$1style.css?v=${version}$1`)
+        .replace(/src=(["'])(?:\.\/)?script\.js(?:\?v=[^"']*)?\1/gi, `src=$1script.js?v=${version}$1`);
 
       if (cssCode.trim()) combined += `\n<style>\n${cssCode}\n</style>`;
       if (jsCode.trim()) combined += `\n<script>\n${jsCode}\n</script>`;
@@ -169,8 +169,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       let combined = html;
       const version = Date.now().toString();
       combined = combined
-        .replace(/href=(["'])style\.css(?:\?v=[^"']*)?\1/gi, `href="style.css?v=${version}"`)
-        .replace(/src=(["'])script\.js(?:\?v=[^"']*)?\1/gi, `src="script.js?v=${version}"`);
+        .replace(/href=(["'])(?:\.\/)?style\.css(?:\?v=[^"']*)?\1/gi, `href=$1style.css?v=${version}$1`)
+        .replace(/src=(["'])(?:\.\/)?script\.js(?:\?v=[^"']*)?\1/gi, `src=$1script.js?v=${version}$1`);
 
       if (css.trim()) combined += `\n<style>\n${css}\n</style>`;
       if (js.trim()) combined += `\n<script>\n${js}\n</script>`;
