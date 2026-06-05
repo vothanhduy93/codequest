@@ -90,6 +90,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const [success, setSuccess] = useState(false);
   const [xpGainedAmt, setXpGainedAmt] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [allowManualBypass, setAllowManualBypass] = useState<boolean>(false);
   
   const [showSnippetModal, setShowSnippetModal] = useState(false);
   const [snippetTitle, setSnippetTitle] = useState('');
@@ -179,6 +180,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       setShowHint(false);
       setSuccess(false);
       setErrorMsg('');
+      setAllowManualBypass(false);
       setXpGainedAmt(0);
     }
   }, [activeChallengeId, activeChallenge]);
@@ -186,6 +188,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
   const handleNextChallenge = () => {
     setSuccess(false);
     setErrorMsg('');
+    setAllowManualBypass(false);
     
     if (customChallenge && onChallengeComplete) {
       onChallengeComplete();
@@ -374,6 +377,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           .trim();
       };
       
+      setAllowManualBypass(false);
       // 1. Check if user hasn't modified default code
       if (activeChallenge.defaultCode && normalizeClean(debouncedCode) === normalizeClean(activeChallenge.defaultCode)) {
         setErrorMsg('Bạn chưa thay đổi code. Hãy thử làm bài nhé!');
@@ -386,7 +390,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           const solutionFull = activeChallenge.solution || '';
           
           if (!solutionFull) {
-            setErrorMsg('Bài học này đang bị thiếu đáp án hệ thống không thể tự chấm (Bạn có thể chọn bài khác trong danh sách bài học để học tiếp). Mong bạn thông cảm!');
+            setErrorMsg('Rất tiếc 🥲, hệ thống không tìm thấy Đáp Án Mẫu trong cơ sở dữ liệu nên không thể tự động chấm điểm cho bạn. Mong bạn thông cảm vì sự bất tiện này nhé!');
+            setAllowManualBypass(true);
             return;
           }
           
@@ -839,6 +844,30 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
               {errorMsg && (
                 <div className="mt-3 text-red-400 text-sm font-medium text-left bg-red-400/10 p-3 rounded-lg border border-red-400/20 whitespace-pre-wrap">
                   {errorMsg}
+                  {allowManualBypass && (
+                    <button 
+                      onClick={() => {
+                        setSuccess(true);
+                        setErrorMsg('');
+                        setHintDetail(null);
+                        setAllowManualBypass(false);
+                        if (!user.completedChallenges.includes(activeChallenge.id)) {
+                          completeChallenge(activeChallenge.id, activeChallenge.xpReward);
+                          if (activeChallenge.xpReward) {
+                            setXpGainedAmt(activeChallenge.xpReward);
+                          }
+                        } else if (mode === 'time_attack') {
+                          addXp(20);
+                          setXpGainedAmt(20);
+                        } else {
+                          setXpGainedAmt(0);
+                        }
+                      }}
+                      className="mt-3 w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg flex items-center justify-center transition"
+                    >
+                      Bỏ qua và nhận kinh nghiệm
+                    </button>
+                  )}
                 </div>
               )}
             </div>
