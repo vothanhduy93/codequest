@@ -700,7 +700,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             >
               {showHint && mode !== 'time_attack' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[60] bg-slate-900/95 backdrop-blur-md p-6 text-sm flex flex-col gap-4 overflow-y-auto border-t border-white/10 shadow-2xl">
-                  {activeChallenge.solution && (
+                  {activeChallenge.solution ? (
                     <div className="mt-2 text-left">
                       <span className="font-bold text-teal-400 text-base">✅ Đáp án tham khảo:</span>
                       <div className="mt-2 rounded-xl bg-black/50 border border-white/10 overflow-hidden shadow-inner text-sm">
@@ -714,6 +714,12 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                           {activeChallenge.solution}
                         </SyntaxHighlighter>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 flex flex-col items-center text-center">
+                      <Bot size={48} className="text-teal-500 mb-4 opacity-80" />
+                      <p className="text-slate-300 text-lg mb-2">Bài này không có mã đáp án có sẵn.</p>
+                      <p className="text-slate-400">Bạn hãy tự thử nghiệm và làm theo hướng dẫn nhé. Nếu gặp khó khăn, hãy bấm <b>Chạy Code & Kiểm tra</b> để xem gợi ý lỗi chi tiết bổ sung!</p>
                     </div>
                   )}
                 </motion.div>
