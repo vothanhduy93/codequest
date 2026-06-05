@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
-import { Play, CheckCircle, Lightbulb, Lock, BookmarkPlus, X, Bot, ChevronRight, Loader2, Wand2 } from 'lucide-react';
+import { Play, CheckCircle, Lightbulb, Lock, BookmarkPlus, X, Bot, ChevronRight, Loader2, Wand2, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import Editor, { useMonaco } from '@monaco-editor/react';
@@ -256,6 +256,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       <script>
         window.onerror = function() { return true; };
         function __validate() {
+          const code = ${JSON.stringify(debouncedCode).replace(/<\/script>/gi, '<\\/script>')};
+          const assert = function(condition, msg) { if(!condition) throw new Error(msg || 'Assertion failed'); };
           try {
             ${activeChallenge.validationSnippet}
           } catch(e) {
@@ -381,7 +383,18 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       // 2. If validation is completely empty or just "return true;", use solution string matching as fallback
       const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
       if (!hasMeaningfulValidation && activeChallenge.solution) {
-         if (normalizeClean(debouncedCode) !== normalizeClean(activeChallenge.solution)) {
+          const solutionFull = activeChallenge.solution || '';
+          const solMatchStyle = solutionFull.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+          const solCss = solMatchStyle ? solMatchStyle[1] : '';
+          const solMatchScript = solutionFull.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+          const solJs = solMatchScript ? solMatchScript[1] : '';
+          const solHtml = solutionFull.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+
+          const codeMismatch = normalizeClean(htmlCode) !== normalizeClean(solHtml) || 
+                               normalizeClean(cssCode) !== normalizeClean(solCss) || 
+                               normalizeClean(jsCode) !== normalizeClean(solJs);
+
+          if (codeMismatch) {
             // Chạy phân tích lỗi thông minh (Diagnostic)
             let diagnostic = '';
             
@@ -583,6 +596,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             </div>
           </div>
           <div className="bg-blue-500/10 p-4 rounded-xl text-slate-300 text-sm border-l-4 border-blue-500">
+            {activeChallenge.instructions && activeChallenge.instructions.toLowerCase().includes('style') && (
+              <div className="mb-3 text-xs text-orange-300 font-bold block">
+                <Info className="inline w-4 h-4 mr-1 pb-[2px]"/>Mẹo: Trình biên tập của ứng dụng hỗ trợ đa cửa sổ. Thay vì viết thẻ &lt;style&gt; bên trong HTML, hãy chuyển sang tab <span className="underline">style.css</span> để làm toán các thay đổi về CSS nhé. Cửa sổ này tự động gộp file cho bạn lúc chấm điểm!
+              </div>
+            )}
             <div className="whitespace-pre-wrap font-sans flex items-start flex-wrap gap-x-2">
               <strong>Nhiệm vụ:</strong> <Markdown components={{
                 p: ({node, ...props}: any) => <span {...props} />,
