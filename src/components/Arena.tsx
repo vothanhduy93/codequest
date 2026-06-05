@@ -382,8 +382,13 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
       // 2. If validation is completely empty or just "return true;", use solution string matching as fallback
       const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
-      if (!hasMeaningfulValidation && activeChallenge.solution) {
+      if (!hasMeaningfulValidation) {
           const solutionFull = activeChallenge.solution || '';
+          
+          if (!solutionFull) {
+            setErrorMsg('Bài học này đang bị thiếu đáp án hệ thống không thể tự chấm (Bạn có thể chọn bài khác trong danh sách bài học để học tiếp). Mong bạn thông cảm!');
+            return;
+          }
           
           let isMatch = false;
 
