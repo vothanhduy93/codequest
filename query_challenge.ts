@@ -16,6 +16,7 @@ async function findChallenge() {
     }
   });
   console.log(JSON.stringify(challenges, null, 2));
+  process.exit(0);
 }
 
 findChallenge().catch(console.error);

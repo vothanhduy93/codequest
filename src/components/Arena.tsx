@@ -384,17 +384,37 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
       if (!hasMeaningfulValidation && activeChallenge.solution) {
           const solutionFull = activeChallenge.solution || '';
-          const solMatchStyle = solutionFull.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
-          const solCss = solMatchStyle ? solMatchStyle[1] : '';
-          const solMatchScript = solutionFull.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
-          const solJs = solMatchScript ? solMatchScript[1] : '';
-          const solHtml = solutionFull.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+          
+          let isMatch = false;
 
-          const codeMismatch = normalizeClean(htmlCode) !== normalizeClean(solHtml) || 
-                               normalizeClean(cssCode) !== normalizeClean(solCss) || 
-                               normalizeClean(jsCode) !== normalizeClean(solJs);
+          // 1. Exact match in HTML tab
+          if (normalizeClean(htmlCode) === normalizeClean(solutionFull)) {
+            isMatch = true;
+          }
 
-          if (codeMismatch) {
+          if (!isMatch) {
+            const solMatchStyle = solutionFull.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+            const solCss = solMatchStyle ? solMatchStyle[1] : '';
+            const solMatchScript = solutionFull.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+            const solJs = solMatchScript ? solMatchScript[1] : '';
+            const solHtml = solutionFull.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+
+            const userHtmlRaw = htmlCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+            const userMatchStyle = htmlCode.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+            // combine from both tab and inline
+            const userCss = (cssCode.trim() + '\n' + (userMatchStyle ? userMatchStyle[1] : '')).trim();
+            
+            const userMatchScript = htmlCode.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+            const userJs = (jsCode.trim() + '\n' + (userMatchScript ? userMatchScript[1] : '')).trim();
+
+            if (normalizeClean(userHtmlRaw) === normalizeClean(solHtml) && 
+                normalizeClean(userCss) === normalizeClean(solCss) && 
+                normalizeClean(userJs) === normalizeClean(solJs)) {
+                isMatch = true;
+            }
+          }
+
+          if (!isMatch) {
             // Chạy phân tích lỗi thông minh (Diagnostic)
             let diagnostic = '';
             
