@@ -87,6 +87,8 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const [debouncedCode, setDebouncedCode] = useState<string>('');
   const [showHint, setShowHint] = useState(false);
+  const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
+  const [generatedSolution, setGeneratedSolution] = useState('');
   const [success, setSuccess] = useState(false);
   const [xpGainedAmt, setXpGainedAmt] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -178,6 +180,7 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       setDebouncedCode(combined);
 
       setShowHint(false);
+      setGeneratedSolution('');
       setSuccess(false);
       setErrorMsg('');
       setAllowManualBypass(false);
@@ -309,6 +312,35 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [success, activeChallenge?.id, activeChallenge?.title, activeChallenge?.instructions, debouncedCode, activeChallenge?.xpReward, completeChallenge, addXp, user.completedChallenges]);
+
+  const handleGenerateSolution = async () => {
+    if (!activeChallenge || isGeneratingSolution) return;
+    setIsGeneratingSolution(true);
+    setGeneratedSolution('');
+    try {
+      const res = await fetch('/api/solve-challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeChallenge.id,
+          title: activeChallenge.title,
+          description: activeChallenge.description,
+          instructions: activeChallenge.instructions,
+          defaultCode: activeChallenge.defaultCode
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.solution) {
+        setGeneratedSolution(data.solution);
+      } else {
+        alert(data.error || 'Có lỗi xảy ra khi tạo đáp án.');
+      }
+    } catch (e: any) {
+      alert('Không kết nối được server.');
+    } finally {
+      setIsGeneratingSolution(false);
+    }
+  };
 
   const handleBeautify = () => {
     playSound('pop');
@@ -710,9 +742,10 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
             >
               {showHint && mode !== 'time_attack' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[60] bg-slate-900/95 backdrop-blur-md p-6 text-sm flex flex-col gap-4 overflow-y-auto border-t border-white/10 shadow-2xl">
-                  {activeChallenge.solution ? (
+                  {activeChallenge.solution || generatedSolution ? (
                     <div className="mt-2 text-left">
                       <span className="font-bold text-teal-400 text-base">✅ Đáp án tham khảo:</span>
+                      {generatedSolution && <span className="ml-2 text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">AI Tạo</span>}
                       <div className="mt-2 rounded-xl bg-black/50 border border-white/10 overflow-hidden shadow-inner text-sm">
                         <SyntaxHighlighter
                           language={activeChallenge.type === 'js' ? 'javascript' : activeChallenge.type === 'html' ? 'html' : 'css'}
@@ -721,15 +754,25 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
                           wrapLongLines={true}
                           customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
                         >
-                          {activeChallenge.solution}
+                          {activeChallenge.solution || generatedSolution}
                         </SyntaxHighlighter>
                       </div>
                     </div>
                   ) : (
                     <div className="mt-6 flex flex-col items-center text-center">
                       <Bot size={48} className="text-teal-500 mb-4 opacity-80" />
-                      <p className="text-slate-300 text-lg mb-2">Bài này không có mã đáp án có sẵn.</p>
-                      <p className="text-slate-400">Bạn hãy tự thử nghiệm và làm theo hướng dẫn nhé. Nếu gặp khó khăn, hãy bấm <b>Chạy Code & Kiểm tra</b> để xem gợi ý lỗi chi tiết bổ sung!</p>
+                      <p className="text-slate-300 text-lg mb-2">Bài này không có mã đáp án có sẵn trong cơ sở dữ liệu.</p>
+                      <button 
+                        onClick={handleGenerateSolution}
+                        disabled={isGeneratingSolution}
+                        className="mt-4 px-6 py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/50 rounded-xl font-medium flex items-center gap-2 transition"
+                      >
+                        {isGeneratingSolution ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /> Đang dùng AI giải bài...</>
+                        ) : (
+                          <><Wand2 className="w-5 h-5" /> Dùng AI Trợ Giảng giải bài này</>
+                        )}
+                      </button>
                     </div>
                   )}
                 </motion.div>

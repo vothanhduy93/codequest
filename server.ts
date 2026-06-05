@@ -94,6 +94,39 @@ async function startServer() {
     }
   });
 
+  app.post('/api/solve-challenge', async (req, res) => {
+    try {
+      const { id, title, description, instructions, defaultCode } = req.body;
+      if (!id || !title) return res.status(400).json({ error: 'Missing challenge info' });
+      
+      const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
+Your task is to provide the FINAL CORRECT CODE that solves the challenge.
+
+Challenge Title: ${title}
+Instructions: ${instructions}
+Description: ${description}
+Default Code:
+\`\`\`
+${defaultCode}
+\`\`\`
+
+Return ONLY the raw solved code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
+
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+      });
+
+      let solution = response.text || '';
+      solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+
+      res.json({ solution });
+    } catch (e: any) {
+      console.error('Solve error:', e);
+      res.status(500).json({ error: e.message || 'Error generating solution' });
+    }
+  });
+
   app.get('/api/leaderboard', (req, res) => {
     res.json([
       { id: '1', name: 'Nguyễn Văn A', xp: 4500, level: 9, avatar: 'NA' },
