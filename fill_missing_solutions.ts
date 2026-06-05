@@ -26,10 +26,7 @@ async function run() {
 
   let processed = 0;
   for (const item of missing) {
-      if (processed >= 15) {
-          console.log("Reached limit for this run (15). Exiting to prevent timeout.");
-          break;
-      }
+      if (processed >= 1) break;
       try {
          const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
 Your task is to provide the FINAL CORRECT CODE that solves the challenge.
@@ -45,7 +42,7 @@ ${item.defaultCode}
 Return ONLY the raw solved code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
 
          const response = await ai.models.generateContent({
-             model: 'gemini-2.5-flash',
+             model: 'gemini-1.5-flash',
              contents: prompt,
          });
 

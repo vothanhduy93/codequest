@@ -161,7 +161,7 @@ ${item.defaultCode}
 Return ONLY the raw solved code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
 
                const response = await ai.models.generateContent({
-                   model: 'gemini-2.5-flash',
+                   model: 'gemini-1.5-flash',
                    contents: prompt,
                });
 
