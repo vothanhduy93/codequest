@@ -26,6 +26,10 @@ async function run() {
 
   let processed = 0;
   for (const item of missing) {
+      if (processed >= 15) {
+          console.log("Reached limit for this run (15). Exiting to prevent timeout.");
+          break;
+      }
       try {
          const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
 Your task is to provide the FINAL CORRECT CODE that solves the challenge.
@@ -52,13 +56,13 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
          processed++;
          console.log(`[${processed}/${missing.length}] Updated ${item.id} - ${item.title}`);
          
-      } catch (err) {
-         console.error(`Failed to process ${item.id}:`, err);
+      } catch (err: any) {
+         console.error(`Failed to process ${item.id}:`, err?.message || err);
       }
-      // wait 5 seconds between requests
-      await new Promise(r => setTimeout(r, 5000));
+      // wait 4 seconds between requests
+      await new Promise(r => setTimeout(r, 4000));
   }
-  console.log('Done filling missing solutions.');
+  console.log('Done filling this batch of missing solutions.');
   process.exit(0);
 }
 run();

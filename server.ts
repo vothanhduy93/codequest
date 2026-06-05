@@ -127,6 +127,63 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
     }
   });
 
+  app.post('/api/trigger-fill-missing', async (req, res) => {
+    res.json({ message: 'Background filling job started.' });
+    
+    // Run asynchronously
+    (async () => {
+      try {
+        console.log('[Background] Starting to fill missing solutions...');
+        const querySnapshot = await getDocs(collection(db, 'challenges'));
+        const missing: any[] = [];
+        querySnapshot.forEach(d => {
+            const data = d.data();
+            if (!data.solution || data.solution.trim() === '') {
+                missing.push({ id: d.id, ...data });
+            }
+        });
+        console.log(`[Background] Found ${missing.length} missing solutions.`);
+
+        let processed = 0;
+        for (const item of missing) {
+            try {
+               const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
+Your task is to provide the FINAL CORRECT CODE that solves the challenge.
+
+Challenge Title: ${item.title}
+Instructions: ${item.instructions}
+Description: ${item.description}
+Default Code:
+\`\`\`
+${item.defaultCode}
+\`\`\`
+
+Return ONLY the raw solved code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
+
+               const response = await ai.models.generateContent({
+                   model: 'gemini-2.5-flash',
+                   contents: prompt,
+               });
+
+               let solution = response.text || '';
+               solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+
+               await updateDoc(doc(db, 'challenges', item.id), { solution });
+               processed++;
+               console.log(`[Background] [${processed}/${missing.length}] Updated ${item.id} - ${item.title}`);
+            } catch (err: any) {
+               console.error(`[Background] Failed to process ${item.id}:`, err?.message || err);
+            }
+            // wait 5 seconds between requests
+            await new Promise(r => setTimeout(r, 5000));
+        }
+        console.log('[Background] Done filling missing solutions.');
+      } catch (err) {
+        console.error('[Background] Fatal error:', err);
+      }
+    })();
+  });
+
   app.get('/api/leaderboard', (req, res) => {
     res.json([
       { id: '1', name: 'Nguyễn Văn A', xp: 4500, level: 9, avatar: 'NA' },
