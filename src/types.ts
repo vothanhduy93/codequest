@@ -50,6 +50,8 @@ export interface Challenge {
   defaultCode: string;
   xpReward: number;
   validationSnippet: string; // JavaScript code to validate the iframe content
+  auditStatus?: 'PASS' | 'FAIL' | 'ERROR' | 'PENDING';
+  auditFeedback?: string;
 }
 
 export interface LeaderboardEntry {

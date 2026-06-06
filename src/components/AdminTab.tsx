@@ -59,6 +59,30 @@ export default function AdminTab() {
             <List className="w-5 h-5 text-teal-400" />
             <h2 className="text-xl font-bold">Bài học ({filteredChallenges.length})</h2>
           </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={async () => {
+                if (confirm('Bắt đầu audit lỗi?')) {
+                  fetch('/api/trigger-audit', { method: 'POST' });
+                  alert('Đã gửi yêu cầu audit background.');
+                }
+              }}
+              className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded text-xs font-medium hover:bg-amber-500/30 transition-colors flex-1"
+            >
+              Trigger Audit
+            </button>
+            <button 
+              onClick={async () => {
+                if (confirm('Bắt đầu autofix?')) {
+                  fetch('/api/trigger-autofix', { method: 'POST' });
+                  alert('Đã gửi yêu cầu autofix background.');
+                }
+              }}
+              className="px-3 py-1.5 bg-rose-500/20 text-rose-300 rounded text-xs font-medium hover:bg-rose-500/30 transition-colors flex-1"
+            >
+              Trigger Autofix
+            </button>
+          </div>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
@@ -78,12 +102,24 @@ export default function AdminTab() {
                  key={c.id}
                  onClick={() => selectChallenge(c)}
                  className={cn(
-                   "w-full text-left p-3 rounded-lg mb-1 transition-colors flex flex-col gap-1",
+                   "w-full text-left p-3 rounded-lg mb-1 transition-colors flex flex-col gap-1 relative",
                    isSelected ? "bg-teal-500/20 border border-teal-500/30" : "hover:bg-white/5 border border-transparent"
                  )}
                >
-                 <span className="text-xs text-slate-400 font-mono">{c.id}</span>
-                 <span className={cn("font-medium", isSelected ? "text-teal-300" : "text-slate-300")}>{c.title}</span>
+                 <div className="flex items-center justify-between">
+                   <span className="text-xs text-slate-400 font-mono">{c.id}</span>
+                   {c.auditStatus && c.auditStatus !== 'PENDING' && (
+                     <span className={cn(
+                       "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                       c.auditStatus === 'PASS' ? "bg-green-500/20 text-green-400" :
+                       c.auditStatus === 'FAIL' ? "bg-rose-500/20 text-rose-400" :
+                       "bg-amber-500/20 text-amber-400"
+                     )}>
+                       {c.auditStatus}
+                     </span>
+                   )}
+                 </div>
+                 <span className={cn("font-medium text-sm", isSelected ? "text-teal-300" : "text-slate-300")}>{c.title}</span>
                </button>
              );
           })}
@@ -110,6 +146,22 @@ export default function AdminTab() {
             </div>
             
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-6">
+
+              {selectedChallenge.auditFeedback && (
+                <div className={cn(
+                  "p-4 rounded-xl border flex flex-col gap-2",
+                  selectedChallenge.auditStatus === 'PASS' ? "bg-green-500/10 border-green-500/30 text-green-200" :
+                  selectedChallenge.auditStatus === 'FAIL' ? "bg-rose-500/10 border-rose-500/30 text-rose-200" :
+                  "bg-amber-500/10 border-amber-500/30 text-amber-200"
+                )}>
+                  <p className="text-xs font-bold uppercase opacity-80">
+                    Audit {selectedChallenge.auditStatus}
+                  </p>
+                  <p className="text-sm">
+                    {selectedChallenge.auditFeedback}
+                  </p>
+                </div>
+              )}
               
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-slate-300">Tiêu đề (Title)</label>

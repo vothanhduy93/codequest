@@ -14,17 +14,19 @@ async function run() {
   let audited = 0;
   let passed = 0;
   let failed = 0;
+  let error = 0;
   querySnapshot.forEach(d => {
       total++;
       const data = d.data();
       if (data.auditStatus && data.auditStatus !== 'PENDING') {
           audited++;
           if (data.auditStatus === 'PASS') passed++;
-          else failed++;
+          else if (data.auditStatus === 'FAIL') failed++;
+          else if (data.auditStatus === 'ERROR') error++;
       }
   });
 
-  console.log(`Total: ${total}, Audited: ${audited}, PASS: ${passed}, FAIL: ${failed}`);
+  console.log(`Total: ${total}, Audited: ${audited}, PASS: ${passed}, FAIL: ${failed}, ERROR: ${error}`);
   process.exit(0);
 }
 run();

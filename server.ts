@@ -218,6 +218,15 @@ Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or 
 
         let processed = 0;
         let pIndex = 0;
+        
+        const fallbackModels = [
+            'gemma-4-31b-it',
+            'gemma-4-26b-a4b-it',
+            'gemini-3.1-flash-lite',
+            'gemini-flash-lite-latest'
+        ];
+        let modelSelector = 0;
+        
         while (pIndex < toAudit.length) {
             const item = toAudit[pIndex];
             let attempt = 0;
@@ -242,8 +251,11 @@ ${item.solution}
 
 Evaluate the solution. Check if there are any syntax errors, if it produces the expected outcome, and if it adheres to all instructions.`;
 
+                   const modelToUse = fallbackModels[modelSelector % fallbackModels.length];
+                   modelSelector++;
+
                    const response = await ai.models.generateContent({
-                       model: 'gemini-flash-latest',
+                       model: modelToUse,
                        contents: prompt,
                        config: {
                            responseMimeType: 'application/json',
@@ -265,7 +277,16 @@ Evaluate the solution. Check if there are any syntax errors, if it produces the 
                        }
                    });
 
-                   const auditResult = JSON.parse(response.text || '{}');
+                   let rawText = response.text || '{}';
+                   rawText = rawText.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
+                   
+                   let auditResult;
+                   try {
+                       auditResult = JSON.parse(rawText);
+                   } catch (parseErr) {
+                       console.error(`[API] JSON parse error for ${item.id}:`, rawText);
+                       throw parseErr;
+                   }
                    
                    await updateDoc(doc(db, 'challenges', item.id), { 
                        auditStatus: auditResult.status || 'ERROR',
@@ -273,29 +294,129 @@ Evaluate the solution. Check if there are any syntax errors, if it produces the 
                    });
 
                    processed++;
-                   console.log(`[API] [${processed}/${toAudit.length}] Audited ${item.id} - ${item.title} -> ${auditResult.status}`);
+                   console.log(`[API] [${processed}/${toAudit.length}] Audited ${item.id} - ${item.title} -> ${auditResult.status} (by ${modelToUse})`);
                    success = true;
                 } catch (err: any) {
                    console.error(`[API] Failed to audit ${item.id}:`, err?.message || err);
                    if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
-                       await new Promise(r => setTimeout(r, 65000));
+                       modelSelector++; // switch to next model
+                       await new Promise(r => setTimeout(r, 2000));
                    } else if (err?.status === 503 || err?.message?.includes("demand")) {
+                       modelSelector++;
                        await new Promise(r => setTimeout(r, 15000));
                    }
                    attempt++;
                 }
             }
             if (!success) {
-                // If completely failed, move it to end of queue to try later
-                toAudit.push(item);
+                // If completely failed, update doc as ERROR so we don't loop indefinitely
+                console.error(`[API] Completely failed to audit ${item.id} after 3 attempts.`);
+                await updateDoc(doc(db, 'challenges', item.id), { 
+                    auditStatus: 'ERROR',
+                    auditFeedback: 'Failed due to rate limits or API errors after 3 attempts.'
+                }).catch(console.error);
             }
             pIndex++;
-            // wait 4.5 seconds between requests (limit 15 RPM for Free Tier)
-            await new Promise(r => setTimeout(r, 4500));
+            // wait 3s to respect rate limits better
+            await new Promise(r => setTimeout(r, 3000));
         }
         console.log('[API] Background audit job finished.');
       } catch (err: any) {
         console.error('[API] Fatal error in background audit:', err);
+      }
+    })();
+  });
+
+  app.post('/api/trigger-autofix', async (req, res) => {
+    res.json({ message: 'Background autofix job started.' });
+
+    (async () => {
+      try {
+        console.log('[API] Starting to autofix failed solutions...');
+        const querySnapshot = await getDocs(collection(db, 'challenges'));
+        const toFix: any[] = [];
+        querySnapshot.forEach(d => {
+            const data = d.data();
+            if (data.auditStatus === 'FAIL' || data.auditStatus === 'ERROR') {
+                toFix.push({ id: d.id, ...data });
+            }
+        });
+        console.log(`[API] Found ${toFix.length} failed solutions to fix.`);
+
+        const fallbackModels = [
+            'gemma-4-31b-it',
+            'gemma-4-26b-a4b-it',
+            'gemini-3.1-flash-lite',
+            'gemini-flash-lite-latest'
+        ];
+        let modelSelector = 0;
+
+        let processed = 0;
+        for (const item of toFix) {
+            let attempt = 0;
+            let success = false;
+            while (attempt < 3 && !success) {
+               try {
+                  const prompt = `You are an expert coding assistant correcting a failed programming challenge solution.
+
+Challenge Title: ${item.title}
+Instructions: ${item.instructions}
+Description: ${item.description}
+Default Code:
+\`\`\`
+${item.defaultCode}
+\`\`\`
+
+Here is the solution that FAILED the audit:
+\`\`\`
+${item.solution}
+\`\`\`
+
+Audit Feedback (Why it failed):
+${item.auditFeedback}
+
+Provide ONLY the final corrected raw HTML/CSS/JS code. No explanations. No markdown codeblocks (e.g. no \`\`\`html or \`\`\`). Just the pure, solved code.`;
+
+                  const modelToUse = fallbackModels[modelSelector % fallbackModels.length];
+                  modelSelector++;
+
+                  const response = await ai.models.generateContent({
+                      model: modelToUse,
+                      contents: prompt,
+                  });
+
+                  let solution = response.text || '';
+                  solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+
+                  await updateDoc(doc(db, 'challenges', item.id), { 
+                      solution,
+                      auditStatus: 'PENDING',
+                      auditFeedback: 'Autofixed, pending re-audit'
+                  });
+                  processed++;
+                  console.log(`[API] [${processed}/${toFix.length}] Autofixed ${item.id} - ${item.title} (by ${modelToUse})`);
+                  success = true;
+               } catch (err: any) {
+                  console.error(`[API] Failed to autofix ${item.id}:`, err?.message || err);
+                  if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
+                      modelSelector++;
+                      await new Promise(r => setTimeout(r, 2000));
+                  } else if (err?.status === 503 || err?.message?.includes("demand")) {
+                      modelSelector++;
+                      await new Promise(r => setTimeout(r, 8000));
+                  }
+                  attempt++;
+               }
+            }
+            if (!success) {
+                console.error(`[API] Completely failed to autofix ${item.id}.`);
+            }
+            // wait less time
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        console.log('[API] Background autofix job finished.');
+      } catch (err: any) {
+        console.error('[API] Fatal error in background autofix:', err);
       }
     })();
   });
