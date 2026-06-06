@@ -2,6 +2,13 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import * as fs from 'fs';
+
+const firebaseConfig = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -120,6 +127,9 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
       let solution = response.text || '';
       solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
 
+      // Save it back to the database for future use!
+      await updateDoc(doc(db, 'challenges', id), { solution });
+
       res.json({ solution });
     } catch (e: any) {
       console.error('Solve error:', e);
@@ -129,11 +139,10 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
 
   app.post('/api/trigger-fill-missing', async (req, res) => {
     res.json({ message: 'Background filling job started.' });
-    
-    // Run asynchronously
+
     (async () => {
       try {
-        console.log('[Background] Starting to fill missing solutions...');
+        console.log('[API] Starting to fill missing solutions...');
         const querySnapshot = await getDocs(collection(db, 'challenges'));
         const missing: any[] = [];
         querySnapshot.forEach(d => {
@@ -142,7 +151,7 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
                 missing.push({ id: d.id, ...data });
             }
         });
-        console.log(`[Background] Found ${missing.length} missing solutions.`);
+        console.log(`[API] Found ${missing.length} missing solutions.`);
 
         let processed = 0;
         for (const item of missing) {
@@ -158,10 +167,10 @@ Default Code:
 ${item.defaultCode}
 \`\`\`
 
-Return ONLY the raw solved code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
+Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
 
                const response = await ai.models.generateContent({
-                   model: 'gemini-1.5-flash',
+                   model: 'gemini-2.5-flash-lite',
                    contents: prompt,
                });
 
@@ -170,16 +179,21 @@ Return ONLY the raw solved code, without any markdown formatting or explanations
 
                await updateDoc(doc(db, 'challenges', item.id), { solution });
                processed++;
-               console.log(`[Background] [${processed}/${missing.length}] Updated ${item.id} - ${item.title}`);
+               console.log(`[API] [${processed}/${missing.length}] Updated ${item.id} - ${item.title}`);
             } catch (err: any) {
-               console.error(`[Background] Failed to process ${item.id}:`, err?.message || err);
+               console.error(`[API] Failed to process ${item.id}:`, err?.message || err);
+               if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
+                   await new Promise(r => setTimeout(r, 60000));
+               } else if (err?.status === 503 || err?.message?.includes("demand")) {
+                   await new Promise(r => setTimeout(r, 15000));
+               }
             }
-            // wait 5 seconds between requests
-            await new Promise(r => setTimeout(r, 5000));
+            // wait 2 seconds between requests
+            await new Promise(r => setTimeout(r, 2000));
         }
-        console.log('[Background] Done filling missing solutions.');
-      } catch (err) {
-        console.error('[Background] Fatal error:', err);
+        console.log('[API] Background filling job finished.');
+      } catch (err: any) {
+        console.error('[API] Fatal error:', err);
       }
     })();
   });
