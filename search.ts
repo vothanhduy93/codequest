@@ -10,7 +10,7 @@ async function run() {
   const snapshot = await getDocs(collection(db, 'challenges'));
   snapshot.forEach(doc => {
       const data = doc.data();
-      if (data.title && data.title.includes('attribute selector') || (data.instructions && data.instructions.includes('margin-top là 10px'))) {
+      if (!data.solution) {
           console.log(doc.id, data.title);
       }
   });
