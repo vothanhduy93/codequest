@@ -200,6 +200,106 @@ Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or 
     })();
   });
 
+  app.post('/api/trigger-audit', async (req, res) => {
+    res.json({ message: 'Background audit job started.' });
+
+    (async () => {
+      try {
+        console.log('[API] Starting background audit job...');
+        const querySnapshot = await getDocs(collection(db, 'challenges'));
+        const toAudit: any[] = [];
+        querySnapshot.forEach(d => {
+            const data = d.data();
+            if (data.solution && (!data.auditStatus || data.auditStatus === 'PENDING')) {
+                toAudit.push({ id: d.id, ...data });
+            }
+        });
+        console.log(`[API] Found ${toAudit.length} solutions to audit.`);
+
+        let processed = 0;
+        let pIndex = 0;
+        while (pIndex < toAudit.length) {
+            const item = toAudit[pIndex];
+            let attempt = 0;
+            let success = false;
+            while (attempt < 3 && !success) {
+                try {
+                   const prompt = `You are an expert coding auditor. I will provide you with a programming challenge and its proposed solution.
+Your task is to determine if the solution accurately and effectively fulfills all the challenge instructions.
+
+Challenge Title: ${item.title}
+Instructions: ${item.instructions}
+Description: ${item.description}
+Default Code:
+\`\`\`
+${item.defaultCode}
+\`\`\`
+
+Proposed Solution:
+\`\`\`
+${item.solution}
+\`\`\`
+
+Evaluate the solution. Check if there are any syntax errors, if it produces the expected outcome, and if it adheres to all instructions.`;
+
+                   const response = await ai.models.generateContent({
+                       model: 'gemini-flash-latest',
+                       contents: prompt,
+                       config: {
+                           responseMimeType: 'application/json',
+                           responseSchema: {
+                               type: "OBJECT",
+                               properties: {
+                                   status: {
+                                       type: "STRING",
+                                       description: "Either 'PASS' if the solution is completely correct, or 'FAIL' if it is incorrect or missing requirements.",
+                                       enum: ["PASS", "FAIL"]
+                                   },
+                                   feedback: {
+                                       type: "STRING",
+                                       description: "A short review explaining why it passed or failed. If it failed, point out exactly what is wrong."
+                                   }
+                               },
+                               required: ["status", "feedback"]
+                           }
+                       }
+                   });
+
+                   const auditResult = JSON.parse(response.text || '{}');
+                   
+                   await updateDoc(doc(db, 'challenges', item.id), { 
+                       auditStatus: auditResult.status || 'ERROR',
+                       auditFeedback: auditResult.feedback || 'Failed to parse audit result.'
+                   });
+
+                   processed++;
+                   console.log(`[API] [${processed}/${toAudit.length}] Audited ${item.id} - ${item.title} -> ${auditResult.status}`);
+                   success = true;
+                } catch (err: any) {
+                   console.error(`[API] Failed to audit ${item.id}:`, err?.message || err);
+                   if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
+                       await new Promise(r => setTimeout(r, 65000));
+                   } else if (err?.status === 503 || err?.message?.includes("demand")) {
+                       await new Promise(r => setTimeout(r, 15000));
+                   }
+                   attempt++;
+                }
+            }
+            if (!success) {
+                // If completely failed, move it to end of queue to try later
+                toAudit.push(item);
+            }
+            pIndex++;
+            // wait 4.5 seconds between requests (limit 15 RPM for Free Tier)
+            await new Promise(r => setTimeout(r, 4500));
+        }
+        console.log('[API] Background audit job finished.');
+      } catch (err: any) {
+        console.error('[API] Fatal error in background audit:', err);
+      }
+    })();
+  });
+
   app.get('/api/leaderboard', (req, res) => {
     res.json([
       { id: '1', name: 'Nguyễn Văn A', xp: 4500, level: 9, avatar: 'NA' },
