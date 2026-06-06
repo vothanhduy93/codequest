@@ -24,8 +24,11 @@ async function run() {
   let processed = 0;
   for (const item of missing) {
       if (processed >= 200) break;
-      try {
-         const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
+      let attempt = 0;
+      let success = false;
+      while (attempt < 3 && !success) {
+          try {
+             const prompt = `You are a coding instructor. I will provide you with a programming challenge, including its instructions and default starting code.
 Your task is to provide the FINAL CORRECT CODE that solves the challenge.
 
 Challenge Title: ${item.title}
@@ -38,29 +41,33 @@ ${item.defaultCode}
 
 Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
 
-         const response = await ai.models.generateContent({
-             model: 'gemini-2.5-flash-lite',
-             contents: prompt,
-         });
+             const response = await ai.models.generateContent({
+                 model: 'gemini-2.5-flash',
+                 contents: prompt,
+             });
 
-         let solution = response.text || '';
-         solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+             let solution = response.text || '';
+             solution = solution.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
 
-         await updateDoc(doc(db, 'challenges', item.id), { solution });
-         processed++;
-         console.log(`Updated ${item.id} - ${item.title}`);
-      } catch (err: any) {
-         if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
-             console.log("Quota exceeded, backing off 60s...");
-             await new Promise(r => setTimeout(r, 60000));
-         } else if (err?.status === 503 || err?.message?.includes("experiencing high demand")) {
-             console.log("High demand, back off 15s...");
-             await new Promise(r => setTimeout(r, 15000));
-         } else {
-             console.error(`Failed to process ${item.id}:`, err?.message || err);
-         }
+             await updateDoc(doc(db, 'challenges', item.id), { solution });
+             processed++;
+             console.log(`Updated ${item.id} - ${item.title}`);
+             success = true;
+          } catch (err: any) {
+             if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
+                 console.log("Quota exceeded, backing off 60s...");
+                 await new Promise(r => setTimeout(r, 60000));
+             } else if (err?.status === 503 || err?.message?.includes("experiencing high demand")) {
+                 console.log("High demand, back off 15s...");
+                 await new Promise(r => setTimeout(r, 15000));
+             } else {
+                 console.error(`Failed to process ${item.id}:`, err?.message || err);
+                 break;
+             }
+             attempt++;
+          }
       }
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 4500));
   }
   process.exit(0);
 }

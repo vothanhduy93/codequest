@@ -170,7 +170,7 @@ ${item.defaultCode}
 Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or explanations. Do not include \`\`\`html or \`\`\`. Just the raw code.`;
 
                const response = await ai.models.generateContent({
-                   model: 'gemini-2.5-flash-lite',
+                   model: 'gemini-2.5-flash',
                    contents: prompt,
                });
 
@@ -183,13 +183,15 @@ Return ONLY the raw solved HTML/CSS/JS code, without any markdown formatting or 
             } catch (err: any) {
                console.error(`[API] Failed to process ${item.id}:`, err?.message || err);
                if (err?.message?.includes("RESOURCE_EXHAUSTED") || err?.status === 429) {
-                   await new Promise(r => setTimeout(r, 60000));
+                   missing.push(item); // Retry later
+                   await new Promise(r => setTimeout(r, 65000));
                } else if (err?.status === 503 || err?.message?.includes("demand")) {
+                   missing.push(item);
                    await new Promise(r => setTimeout(r, 15000));
                }
             }
-            // wait 2 seconds between requests
-            await new Promise(r => setTimeout(r, 2000));
+            // wait 5 seconds between requests
+            await new Promise(r => setTimeout(r, 5000));
         }
         console.log('[API] Background filling job finished.');
       } catch (err: any) {
