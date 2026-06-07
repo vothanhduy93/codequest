@@ -54,31 +54,41 @@ const defaultUser = (uid: string, name: string, photoURL: string | null): User =
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const replaceFCC = (text?: string) => {
+  if (!text) return '';
+  return text.replace(/freecodecamp(?!\.org|\.com)/gi, 'CodeQuest').replace(/free code camp/gi, 'CodeQuest');
+};
+
 const healChallenges = (list: Challenge[]): Challenge[] => {
   return list.map(c => {
+    let newC = { ...c };
+    if (newC.title) newC.title = replaceFCC(newC.title);
+    if (newC.description) newC.description = replaceFCC(newC.description);
+    if (newC.instructions) newC.instructions = replaceFCC(newC.instructions);
+    
     // If it's the Doctype challenge and the default code is empty or placeholder
-    if ((c.title?.toLowerCase().includes('doctype') || c.id === 'fcc_1000') && (!c.defaultCode || !c.defaultCode.trim() || c.defaultCode === '<!-- Code ở đây -->\n')) {
+    if ((newC.title?.toLowerCase().includes('doctype') || newC.id === 'fcc_1000') && (!newC.defaultCode || !newC.defaultCode.trim() || newC.defaultCode === '<!-- Code ở đây -->\n')) {
       return {
-        ...c,
+        ...newC,
         defaultCode: '<h1>Hello World</h1>'
       };
     }
     
     // Fallback: if any HTML challenge has no default code, give it a placeholder comment or content
-    if (!c.defaultCode || !c.defaultCode.trim()) {
-      if (c.type === 'html') {
+    if (!newC.defaultCode || !newC.defaultCode.trim()) {
+      if (newC.type === 'html') {
          let starter = '<!-- Code ở đây -->\n';
-         if (c.solution && c.solution.includes('<h1>')) {
+         if (newC.solution && newC.solution.includes('<h1>')) {
             starter = '<h1>Hello World</h1>';
          }
-         return { ...c, defaultCode: starter };
-      } else if (c.type === 'css') {
-         return { ...c, defaultCode: '/* Viết CSS ở đây */\n' };
-      } else if (c.type === 'js') {
-         return { ...c, defaultCode: '// Viết Code JavaScript ở đây\n' };
+         return { ...newC, defaultCode: starter };
+      } else if (newC.type === 'css') {
+         return { ...newC, defaultCode: '/* Viết CSS ở đây */\n' };
+      } else if (newC.type === 'js') {
+         return { ...newC, defaultCode: '// Viết Code JavaScript ở đây\n' };
       }
     }
-    return c;
+    return newC;
   });
 };
 
