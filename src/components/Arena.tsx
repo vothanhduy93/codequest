@@ -435,7 +435,11 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       
       setAllowManualBypass(false);
       // 1. Check if user hasn't modified default code
-      if (activeChallenge.defaultCode && normalizeClean(debouncedCode) === normalizeClean(activeChallenge.defaultCode)) {
+      const isUnmodified = normalize(htmlCode) === normalize(defaultValues.html) && 
+                           normalize(cssCode) === normalize(defaultValues.css) && 
+                           normalize(jsCode) === normalize(defaultValues.js);
+
+      if (activeChallenge.defaultCode && isUnmodified) {
         setErrorMsg('Bạn chưa thay đổi code. Hãy thử làm bài nhé!');
         return;
       }
