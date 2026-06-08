@@ -402,7 +402,31 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
       const normalize = (s: string) => s.replace(/\s+/g, '').trim();
       const normalizeClean = (s: string) => {
         if (!s) return '';
-        return s.toLowerCase()
+        let processed = s.toLowerCase();
+        // Try to sort HTML attributes to ignore order differences
+        try {
+          if (processed.includes('<') && processed.includes('>')) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(processed, 'text/html');
+            const sortAttributes = (node: Element) => {
+              if (node.attributes && node.attributes.length > 0) {
+                const attrs = Array.from(node.attributes).sort((a, b) => a.name.localeCompare(b.name));
+                attrs.forEach(attr => {
+                  const val = attr.value;
+                  node.removeAttribute(attr.name);
+                  node.setAttribute(attr.name, val);
+                });
+              }
+              Array.from(node.children).forEach(sortAttributes);
+            };
+            sortAttributes(doc.body);
+            processed = doc.body.innerHTML;
+          }
+        } catch (e) {
+          // Fallback to simple replace if DOMParser fails
+        }
+
+        return processed
           .replace(/[\s\.,!\?]/g, '')
           .replace(/['"`]/g, '')
           .replace(/;\s*$/g, '')

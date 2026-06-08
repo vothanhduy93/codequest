@@ -11,7 +11,7 @@ async function findChallenge() {
   const challenges = [];
   querySnapshot.forEach(d => {
     const data = d.data();
-    if (data.title && data.title.includes('Thêm hình ảnh')) {
+    if (data.title && data.title.includes('id')) {
       challenges.push(data);
     }
   });
