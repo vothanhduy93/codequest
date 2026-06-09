@@ -142,11 +142,26 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
 
   const defaultValues = React.useMemo(() => {
     const fullCode = activeChallenge?.defaultCode || '';
+    
+    let html = '';
+    let css = '';
+    let js = '';
+
     const matchStyle = fullCode.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
-    const css = matchStyle ? matchStyle[1] : '';
+    css = matchStyle ? matchStyle[1] : '';
+
     const matchScript = fullCode.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
-    const js = matchScript ? matchScript[1] : '';
-    const html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+    if (matchScript) {
+        js = matchScript[1];
+        html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+    } else {
+        if (activeChallenge?.type === 'js' || activeChallenge?.type === 'javascript' as any) {
+            js = fullCode.trim();
+        } else {
+            html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').trim();
+        }
+    }
+
     return { html, css, js };
   }, [activeChallengeId, activeChallenge]);
 
@@ -154,19 +169,30 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
     if (activeChallenge && (!isPlaying || mode === 'learn' || (isPlaying && mode === 'time_attack'))) {
       const fullCode = activeChallenge.defaultCode || '';
       
+      let css = '';
       const matchStyle = fullCode.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
-      const css = matchStyle ? matchStyle[1] : '';
+      if (matchStyle) css = matchStyle[1];
 
+      let js = '';
+      let html = '';
       const matchScript = fullCode.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
-      const js = matchScript ? matchScript[1] : '';
-
-      const html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+      if (matchScript) {
+          js = matchScript[1];
+          html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+      } else {
+          if (activeChallenge.type === 'js' || activeChallenge.type === 'javascript' as any) {
+              js = fullCode.trim();
+          } else {
+              html = fullCode.replace(/<style>[\s\S]*?<\/style>/gi, '').trim();
+          }
+      }
 
       setHtmlCode(html);
       setCssCode(css);
       setJsCode(js);
       
-      setActiveEditorTab(activeChallenge.type as 'html' | 'css' | 'js');
+      const activeType = (activeChallenge.type === 'javascript' as any) ? 'js' : activeChallenge.type;
+      setActiveEditorTab(activeType as 'html' | 'css' | 'js');
       
       // Compute combined code for debounce to reset immediately
       let combined = html;
