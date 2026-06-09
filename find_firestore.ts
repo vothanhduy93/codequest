@@ -11,7 +11,7 @@ async function findChallenge() {
     const results: any[] = [];
     querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (JSON.stringify(data).toLowerCase().includes("auto-fill") || JSON.stringify(data).includes("60px")) {
+        if (data.id === "fcc_1212") {
             results.push(data);
         }
     });
@@ -24,7 +24,7 @@ async function findChallenge() {
         console.log("Title:", res.title);
         console.log("Instructions:", res.instructions);
         console.log("Solution:", res.solution);
-        console.log("---------------");
+        console.log("Validation Snippet:", res.validationSnippet);
     }
 }
 

@@ -287,7 +287,32 @@ export default function BattleArena({ matchData, onLeave }: { matchData: any, on
       
       const hasMeaningfulValidation = activeChallenge.validationSnippet && activeChallenge.validationSnippet.trim() !== 'return true;';
       if (!hasMeaningfulValidation && activeChallenge.solution) {
-         if (normalizeClean(debouncedCode) !== normalizeClean(activeChallenge.solution)) {
+         let solHtml = '';
+         let solCss = '';
+         let solJs = '';
+         
+         if (activeChallenge.type === 'js' || (activeChallenge.type as any) === 'javascript') {
+             solJs = activeChallenge.solution.trim();
+         } else if (activeChallenge.type === 'css') {
+             solCss = activeChallenge.solution.trim();
+         } else {
+             const solMatchStyle = activeChallenge.solution.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+             solCss = solMatchStyle ? solMatchStyle[1] : '';
+             const solMatchScript = activeChallenge.solution.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+             solJs = solMatchScript ? solMatchScript[1] : '';
+             solHtml = activeChallenge.solution.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+         }
+
+         const userHtmlRaw = htmlCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+         const userMatchStyle = htmlCode.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+         const userCss = (cssCode.trim() + '\n' + (userMatchStyle ? userMatchStyle[1] : '')).trim();
+         
+         const userMatchScript = htmlCode.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+         const userJs = (jsCode.trim() + '\n' + (userMatchScript ? userMatchScript[1] : '')).trim();
+
+         if (!(normalizeClean(userHtmlRaw) === normalizeClean(solHtml) && 
+               normalizeClean(userCss) === normalizeClean(solCss) && 
+               normalizeClean(userJs) === normalizeClean(solJs))) {
             // PVP doesn't show detailed diagnostics, just fail validation silently or alert
             console.log("Validation failed via string check in PvP");
             return;

@@ -489,11 +489,21 @@ export default function Arena({ kind, mode = 'learn', initialChallengeId, custom
           }
 
           if (!isMatch) {
-            const solMatchStyle = solutionFull.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
-            const solCss = solMatchStyle ? solMatchStyle[1] : '';
-            const solMatchScript = solutionFull.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
-            const solJs = solMatchScript ? solMatchScript[1] : '';
-            const solHtml = solutionFull.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+            let solHtml = '';
+            let solCss = '';
+            let solJs = '';
+            
+            if (activeChallenge.type === 'js' || (activeChallenge.type as any) === 'javascript') {
+                solJs = solutionFull.trim();
+            } else if (activeChallenge.type === 'css') {
+                solCss = solutionFull.trim();
+            } else {
+                const solMatchStyle = solutionFull.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
+                solCss = solMatchStyle ? solMatchStyle[1] : '';
+                const solMatchScript = solutionFull.match(/<script>\n?([\s\S]*?)\n?<\/script>/i);
+                solJs = solMatchScript ? solMatchScript[1] : '';
+                solHtml = solutionFull.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
+            }
 
             const userHtmlRaw = htmlCode.replace(/<style>[\s\S]*?<\/style>/gi, '').replace(/<script>[\s\S]*?<\/script>/gi, '').trim();
             const userMatchStyle = htmlCode.match(/<style>\n?([\s\S]*?)\n?<\/style>/i);
